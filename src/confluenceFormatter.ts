@@ -113,8 +113,14 @@ function formatConfluenceStorageSingle(xml: string): string {
       }
     }
   }
-  // Remove quebras de linha duplicadas
-  return result.replace(/\n{3,}/g, '\n\n').replace(/^\s*\n/gm, '').trim();
+  // Remove quebras de linha duplicadas e espaços extras
+  let processed = result
+    .replace(/^[ \t]*\n/, '') // remove quebra de linha inicial
+    .replace(/\n{3,}/g, '\n\n') // no máximo duas quebras consecutivas
+    .replace(/[ \t]+\n/g, '\n') // remove espaços antes de quebras de linha
+    .replace(/\n([ \t]*\n)+/g, '\n') // remove linhas em branco extras
+    .trim() + '\n';
+  return processed;
 }
 
 // Formatter baseado em HTML: identação simples de tags
@@ -161,19 +167,42 @@ function formatHtmlLike(text: string): string {
         continue;
       }
       if (isClosing) {
+        // Sempre preserva a tag de fechamento, mesmo fora de contexto
+        // Se houver buffer aberto, despeja antes
+        if (bufferInlineText) {
+          result += '\n' + '  '.repeat(indent) + bufferInlineText;
+          bufferInlineText = '';
+          lastTagIsInlineText = false;
+          lastTag = null;
+        }
         indent = Math.max(indent - 1, 0);
         result += '\n' + '  '.repeat(indent) + token.trim();
         lastWasText = false;
         lastTag = null;
         lastTagIsInlineText = false;
+        continue;
       } else if (tagName && isInlineTextTag(tagName) && !isSelfClosing) {
-        // Começa buffer para tag inline-text
+        // Se já houver buffer aberto, despeja antes de abrir novo
+        if (bufferInlineText) {
+          result += '\n' + '  '.repeat(indent) + bufferInlineText;
+          bufferInlineText = '';
+          lastTagIsInlineText = false;
+          lastTag = null;
+        }
         bufferInlineText = token.trim();
         lastTag = tagName;
         lastTagIsInlineText = true;
         indent++;
         continue;
       } else {
+        // Sempre preserva a tag de abertura, independente do tipo
+        // Se houver buffer aberto, despeja antes
+        if (bufferInlineText) {
+          result += '\n' + '  '.repeat(indent) + bufferInlineText;
+          bufferInlineText = '';
+          lastTagIsInlineText = false;
+          lastTag = null;
+        }
         result += '\n' + '  '.repeat(indent) + token.trim();
         if (!isSelfClosing) {
           indent++;
@@ -189,78 +218,30 @@ function formatHtmlLike(text: string): string {
         if (lastTagIsInlineText) {
           bufferInlineText += textContent;
         } else {
+          // Se houver buffer aberto, despeja antes
+          if (bufferInlineText) {
+            result += '\n' + '  '.repeat(indent) + bufferInlineText;
+            bufferInlineText = '';
+            lastTagIsInlineText = false;
+            lastTag = null;
+          }
           result += '\n' + '  '.repeat(indent) + textContent;
         }
         lastWasText = true;
       }
     }
   }
+  // Ao final, se houver buffer aberto, despeja
+  if (bufferInlineText) {
+    result += '\n' + '  '.repeat(indent) + bufferInlineText;
+  }
   // Remove quebras de linha duplicadas e espaços extras
-  let processed = result.replace(/^\s*\n/, '').replace(/\n{3,}/g, '\n\n').trim() + '\n';
-
-  // 2. Pós-processamento: normaliza blocos CSP e outras tags inlineText
-  // Garante que todas as tags inlineText fiquem em linha única
-  processed = processed.replace(/<([\w:-]+)>[\s\n\r]*([\s\S]*?)[\s\n\r]*<\/1>/g, (match: string, tag: string, value: string) => {
-    if (isInlineTextTag(tag)) {
-      return `<${tag}>${value.replace(/\s+/g, ' ').trim()}</${tag}>`;
-    }
-    return match;
-  });
-
-  // 2.2. Formata blocos de propriedades para garantir que cada filho fique em uma linha separada
-  processed = processed.replace(/<([\w:-]+)>([\s\S]*?)<\/1>/g, (match: string, tag: string, inner: string) => {
-    if (isBlockTag(tag)) {
-      // Divide todas as tags filhas
-      const tagRegex = /<([\w:]+)>[\s\S]*?<\/1>/g;
-      const items = [];
-      let m: RegExpExecArray | null;
-      let lastIndex = 0;
-      while ((m = tagRegex.exec(inner)) !== null) {
-        const childTag = m[1];
-        let tagBlock = m[0].replace(/\s+$/g, '').trim();
-        if (isInlineTextTag(childTag)) {
-          tagBlock = tagBlock.replace(/\s+/g, ' ');
-        } else if (isBlockTag(childTag)) {
-          tagBlock = '    ' + tagBlock;
-        }
-        items.push(tagBlock);
-        lastIndex = tagRegex.lastIndex;
-      }
-      let extra = inner.slice(lastIndex).trim();
-      if (extra) {items.push('    ' + extra);}
-      return `\n  <${tag}>\n${items.join('\n')}\n  </${tag}>`;
-    }
-    return match;
-  });
-
-  // 2.3. Formata blocos de parâmetros para garantir que cada tag filha fique em uma linha separada
-  processed = processed.replace(/<([\w:-]+)([^>]*)>([\s\S]*?)<\/1>/g, (match: string, tag: string, attrs: string, inner: string) => {
-    if (isBlockTag(tag)) {
-      // Divide todas as tags filhas
-      const tagRegex = /<([\w:]+)[^>]*>[\s\S]*?<\/1>/g;
-      const items = [];
-      let m: RegExpExecArray | null;
-      let lastIndex = 0;
-      while ((m = tagRegex.exec(inner)) !== null) {
-        const childTag = m[1];
-        let tagBlock = m[0].replace(/\s+$/g, '').trim();
-        if (isBlockTag(childTag)) {
-          tagBlock = tagBlock.split('\n').map(l => '  ' + l).join('\n');
-        } else if (isInlineTextTag(childTag)) {
-          tagBlock = tagBlock.replace(/\s+/g, ' ');
-        } else {
-          tagBlock = '  ' + tagBlock;
-        }
-        items.push(tagBlock);
-        lastIndex = tagRegex.lastIndex;
-      }
-      let extra = inner.slice(lastIndex).trim();
-      if (extra) {items.push('  ' + extra);}
-      return `<${tag}${attrs}>\n${items.join('\n')}\n</${tag}>`;
-    }
-    return match;
-  });
-
+  let processed = result
+    .replace(/^[ \t]*\n/, '') // remove quebra de linha inicial
+    .replace(/\n{3,}/g, '\n\n') // no máximo duas quebras consecutivas
+    .replace(/[ \t]+\n/g, '\n') // remove espaços antes de quebras de linha
+    .replace(/\n([ \t]*\n)+/g, '\n') // remove linhas em branco extras
+    .trim() + '\n';
   return processed;
 }
 
