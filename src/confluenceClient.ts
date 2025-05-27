@@ -38,7 +38,7 @@ export class ConfluenceClient {
 
     async getPageByTitle(spaceKey: string, title: string): Promise<any | null> {
         const { default: fetch } = await import('node-fetch');
-        const url = `${this.baseUrl}/api/v2/pages?spaceKey=${encodeURIComponent(spaceKey)}&title=${encodeURIComponent(title)}&expand=body.storage,version,space`;
+        const url = `${this.baseUrl}/api/v2/pages?spaceKey=${encodeURIComponent(spaceKey)}&title=${encodeURIComponent(title)}&expand=body.${BodyFormat.STORAGE},version,space`;
         const resp = await fetch(url, { headers: { ...this.getAuthHeader(), 'Content-Type': 'application/json' } });
         if (!resp.ok) {throw new Error(await resp.text());}
         const data = await resp.json() as any;
@@ -344,7 +344,7 @@ export class ConfluenceClient {
             title,
             parentId,
             body: {
-                representation: 'storage',
+                representation: BodyFormat.STORAGE,
                 value: contentToSend
             }
         };
@@ -369,7 +369,7 @@ export class ConfluenceClient {
                     title,
                     spaceId,
                     body: {
-                        representation: 'storage',
+                        representation: BodyFormat.STORAGE,
                         value: contentWithImages
                     },
                     version: {
@@ -415,7 +415,7 @@ export class ConfluenceClient {
             title,
             spaceId,
             body: {
-                representation: 'storage',
+                representation: BodyFormat.STORAGE,
                 value: contentToSend
             },
             version: {
