@@ -9,23 +9,80 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onLanguage:confluence"
-  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "confluence-smart-publisher.publishConfluence",
-        "title": "Publicar no Confluence"
+        "title": "Publicar Documento"
+      },
+      {
+        "command": "confluence-smart-publisher.getPageByTitle",
+        "title": "Baixar Documento por Título"
+      },
+      {
+        "command": "confluence-smart-publisher.getPageById",
+        "title": "Baixar Documento por ID"
+      },
+      {
+        "command": "confluence-smart-publisher.createPage",
+        "title": "Criar Documento"
+      },
+      {
+        "command": "confluence-smart-publisher.formatConfluence",
+        "title": "Formatar Documento"
+      },
+      {
+        "command": "confluence-smart-publisher.diffWithPublished",
+        "title": "Comparar Documento Local com o Publicado"
+      },
+      {
+        "command": "confluence-smart-publisher.syncWithPublished",
+        "title": "Sincronizar com Publicado no Confluence"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "confluenceSmartPublisherMenu",
+        "label": "Confluence Smart Publisher"
       }
     ],
     "menus": {
       "explorer/context": [
         {
+          "submenu": "confluenceSmartPublisherMenu",
+          "when": "resourceExtname == .confluence || explorerResourceIsFolder == true",
+          "group": "zzz_confluenceSmartPublisherGroup@1"
+        }
+      ],
+      "confluenceSmartPublisherMenu": [
+        {
           "command": "confluence-smart-publisher.publishConfluence",
-          "when": "resourceExtname == .confluence",
-          "group": "navigation@2"
+          "when": "resourceExtname == .confluence"
+        },
+        {
+          "command": "confluence-smart-publisher.getPageByTitle",
+          "when": "explorerResourceIsFolder == true"
+        },
+        {
+          "command": "confluence-smart-publisher.getPageById",
+          "when": "explorerResourceIsFolder == true"
+        },
+        {
+          "command": "confluence-smart-publisher.createPage",
+          "when": "explorerResourceIsFolder == true"
+        },
+        {
+          "command": "confluence-smart-publisher.formatConfluence",
+          "when": "resourceExtname == .confluence"
+        },
+        {
+          "command": "confluence-smart-publisher.diffWithPublished",
+          "when": "resourceExtname == .confluence"
+        },
+        {
+          "command": "confluence-smart-publisher.syncWithPublished",
+          "when": "resourceExtname == .confluence"
         }
       ]
     },
@@ -46,9 +103,37 @@
           "type": "string",
           "default": "",
           "description": "API Token do Confluence (gere em https://id.atlassian.com/manage-profile/security/api-tokens)"
+        },
+        "confluenceSmartPublisher.format.numberChapters": {
+          "type": "boolean",
+          "default": true,
+          "description": "Numera automaticamente os capítulos ao formatar o documento .confluence"
         }
       }
-    }
+    },
+    "languages": [
+      {
+        "id": "confluence",
+        "aliases": [
+          "Confluence",
+          "confluence"
+        ],
+        "extensions": [
+          ".confluence"
+        ],
+        "mimetypes": [
+          "text/xml"
+        ],
+        "configuration": "./language-configuration/confluence-language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "confluence",
+        "scopeName": "text.html.confluence",
+        "path": "./syntaxes/confluence.tmLanguage.json"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -65,16 +150,27 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.100.0",
+    "@types/form-data": "^2.2.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/node-fetch": "^2.6.12",
+    "@types/vscode": "^1.100.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
-    "eslint": "^9.25.1",
-    "esbuild": "^0.25.3",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.8.3",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.5.2"
-  }
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.3",
+    "eslint": "^9.25.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "fast-xml-parser": "^5.2.3",
+    "form-data": "^4.0.2",
+    "node-fetch": "^2.7.0",
+    "xml-escape": "^1.1.0"
+  },
+  "publisher": "AntonioCarelli",
+  "activationEvents": []
 }

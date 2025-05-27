@@ -58,4 +58,5 @@ coverage/
 # Pasta de testes
 src/test/
 
+# Pasta de documentação para testes
 docs-for-testing/ 
