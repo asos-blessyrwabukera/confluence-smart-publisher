@@ -129,12 +129,27 @@ function formatHtmlLike(text: string): string {
   let lastTagIsInlineText = false;
   let bufferInlineText = '';
 
+  // Novo: lista de tokens para preservar tudo, mesmo malformado
+  const tokens: { type: 'tag' | 'text', value: string, tagName?: string, isClosing?: boolean, isSelfClosing?: boolean }[] = [];
   while ((match = tagRegex.exec(text)) !== null) {
     const token = match[0];
-    if (token.startsWith('</')) {
-      // Tag de fechamento
-      const tagName = token.match(/^<\/(\w+[:\w-]*)>/)?.[1];
-      if (tagName && lastTagIsInlineText && tagName === lastTag) {
+    if (token.startsWith('<')) {
+      // Tag de abertura, fechamento ou self-closing
+      const isClosing = /^<\//.test(token);
+      const isSelfClosing = /\/>$/.test(token) || /^<\w+[^>]*\/>$/.test(token);
+      const tagName = token.match(/^<\/?(\w+[:\w-]*)/)?.[1];
+      tokens.push({ type: 'tag', value: token, tagName, isClosing, isSelfClosing });
+    } else {
+      tokens.push({ type: 'text', value: token });
+    }
+  }
+
+  // Percorre tokens preservando tudo
+  for (let i = 0; i < tokens.length; i++) {
+    const tokenObj = tokens[i];
+    if (tokenObj.type === 'tag') {
+      const { value: token, tagName, isClosing, isSelfClosing } = tokenObj;
+      if (isClosing && tagName && lastTagIsInlineText && tagName === lastTag) {
         // Fecha a tag inline-text na mesma linha
         bufferInlineText += token.trim();
         result += '\n' + '  '.repeat(indent - 1) + bufferInlineText;
@@ -145,33 +160,31 @@ function formatHtmlLike(text: string): string {
         lastWasText = false;
         continue;
       }
-      indent = Math.max(indent - 1, 0);
-      result += '\n' + '  '.repeat(indent) + token.trim();
-      lastWasText = false;
-      lastTag = null;
-      lastTagIsInlineText = false;
-    } else if (token.startsWith('<')) {
-      // Tag de abertura ou self-closing
-      const isSelfClosing = /\/>$/.test(token) || /^<\w+[^>]*\/>$/.test(token);
-      const tagName = token.match(/^<(\w+[:\w-]*)/)?.[1];
-      if (tagName && isInlineTextTag(tagName) && !isSelfClosing) {
+      if (isClosing) {
+        indent = Math.max(indent - 1, 0);
+        result += '\n' + '  '.repeat(indent) + token.trim();
+        lastWasText = false;
+        lastTag = null;
+        lastTagIsInlineText = false;
+      } else if (tagName && isInlineTextTag(tagName) && !isSelfClosing) {
         // Começa buffer para tag inline-text
         bufferInlineText = token.trim();
         lastTag = tagName;
         lastTagIsInlineText = true;
         indent++;
         continue;
+      } else {
+        result += '\n' + '  '.repeat(indent) + token.trim();
+        if (!isSelfClosing) {
+          indent++;
+        }
+        lastWasText = false;
+        lastTag = tagName || null;
+        lastTagIsInlineText = false;
       }
-      result += '\n' + '  '.repeat(indent) + token.trim();
-      if (!isSelfClosing) {
-        indent++;
-      }
-      lastWasText = false;
-      lastTag = tagName || null;
-      lastTagIsInlineText = false;
     } else {
       // Texto
-      const textContent = token.replace(/\s+/g, ' ').trim();
+      const textContent = tokenObj.value.replace(/\s+/g, ' ').trim();
       if (textContent) {
         if (lastTagIsInlineText) {
           bufferInlineText += textContent;
@@ -187,7 +200,7 @@ function formatHtmlLike(text: string): string {
 
   // 2. Pós-processamento: normaliza blocos CSP e outras tags inlineText
   // Garante que todas as tags inlineText fiquem em linha única
-  processed = processed.replace(/<([\w:-]+)>[\s\n\r]*([\s\S]*?)[\s\n\r]*<\/\1>/g, (match: string, tag: string, value: string) => {
+  processed = processed.replace(/<([\w:-]+)>[\s\n\r]*([\s\S]*?)[\s\n\r]*<\/1>/g, (match: string, tag: string, value: string) => {
     if (isInlineTextTag(tag)) {
       return `<${tag}>${value.replace(/\s+/g, ' ').trim()}</${tag}>`;
     }
@@ -195,10 +208,10 @@ function formatHtmlLike(text: string): string {
   });
 
   // 2.2. Formata blocos de propriedades para garantir que cada filho fique em uma linha separada
-  processed = processed.replace(/<([\w:-]+)>([\s\S]*?)<\/\1>/g, (match: string, tag: string, inner: string) => {
+  processed = processed.replace(/<([\w:-]+)>([\s\S]*?)<\/1>/g, (match: string, tag: string, inner: string) => {
     if (isBlockTag(tag)) {
       // Divide todas as tags filhas
-      const tagRegex = /<([\w:]+)>[\s\S]*?<\/\1>/g;
+      const tagRegex = /<([\w:]+)>[\s\S]*?<\/1>/g;
       const items = [];
       let m: RegExpExecArray | null;
       let lastIndex = 0;
@@ -221,10 +234,10 @@ function formatHtmlLike(text: string): string {
   });
 
   // 2.3. Formata blocos de parâmetros para garantir que cada tag filha fique em uma linha separada
-  processed = processed.replace(/<([\w:-]+)([^>]*)>([\s\S]*?)<\/\1>/g, (match: string, tag: string, attrs: string, inner: string) => {
+  processed = processed.replace(/<([\w:-]+)([^>]*)>([\s\S]*?)<\/1>/g, (match: string, tag: string, attrs: string, inner: string) => {
     if (isBlockTag(tag)) {
       // Divide todas as tags filhas
-      const tagRegex = /<([\w:]+)[^>]*>[\s\S]*?<\/\1>/g;
+      const tagRegex = /<([\w:]+)[^>]*>[\s\S]*?<\/1>/g;
       const items = [];
       let m: RegExpExecArray | null;
       let lastIndex = 0;
@@ -257,7 +270,9 @@ export function formatConfluenceDocument(text: string, numberChapters: boolean =
     if (numberChapters) {
       processedText = numberHeadings(processedText);
     }
-    return formatHtmlLike(processedText);
+    let formatted = formatHtmlLike(processedText);
+    // Não aplica mais destaque em tags não fechadas ou não abertas
+    return formatted;
   } catch (e) {
     vscode.window.showErrorMessage('Erro ao formatar o documento: ' + (e instanceof Error ? e.message : String(e)));
     return text;
