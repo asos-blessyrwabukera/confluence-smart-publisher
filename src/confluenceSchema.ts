@@ -62,7 +62,7 @@ export const TAG_BEHAVIOR: Record<string, { block: boolean, inline: boolean, inl
 	'big': { block: false, inline: true, inlineText: true },
 	'table': { block: true, inline: false, inlineText: false },
 	'tbody': { block: true, inline: false, inlineText: false },
-	'tr': { block: false, inline: true, inlineText: true },
+	'tr': { block: false, inline: false, inlineText: true },
 	'td': { block: false, inline: true, inlineText: true },
 	'th': { block: false, inline: true, inlineText: true },
 	'li': { block: false, inline: true, inlineText: true },

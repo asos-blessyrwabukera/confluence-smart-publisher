@@ -131,9 +131,10 @@ function formatHtmlLike(text: string): string {
   let result = '';
   let lastWasText = false;
   let match;
-  let lastTag: string | null = null;
-  let lastTagIsInlineText = false;
-  let bufferInlineText = '';
+
+  // Pilha para múltiplos níveis de inlineText
+  type InlineTextBuffer = { tag: string, buffer: string };
+  const inlineTextStack: InlineTextBuffer[] = [];
 
   // Novo: lista de tokens para preservar tudo, mesmo malformado
   const tokens: { type: 'tag' | 'text', value: string, tagName?: string, isClosing?: boolean, isSelfClosing?: boolean }[] = [];
@@ -150,90 +151,72 @@ function formatHtmlLike(text: string): string {
     }
   }
 
-  // Percorre tokens preservando tudo
+  let lastTokenWasClosingTag = false;
   for (let i = 0; i < tokens.length; i++) {
     const tokenObj = tokens[i];
     if (tokenObj.type === 'tag') {
       const { value: token, tagName, isClosing, isSelfClosing } = tokenObj;
-      if (isClosing && tagName && lastTagIsInlineText && tagName === lastTag) {
-        // Fecha a tag inline-text na mesma linha
-        bufferInlineText += token.trim();
-        result += '\n' + '  '.repeat(indent - 1) + bufferInlineText;
-        bufferInlineText = '';
-        lastTagIsInlineText = false;
-        lastTag = null;
+      // Nova lógica: se o token anterior foi fechamento e agora é abertura, quebra de linha e mesma identação
+      if (!isClosing && !isSelfClosing && lastTokenWasClosingTag) {
+        result += '\n' + '  '.repeat(indent);
+      }
+      if (isClosing && tagName && inlineTextStack.length > 0 && tagName === inlineTextStack[inlineTextStack.length - 1].tag) {
+        // Fecha o nível atual de inlineText
+        inlineTextStack[inlineTextStack.length - 1].buffer += token.trim();
+        const closedBuffer = inlineTextStack.pop()!.buffer;
+        if (inlineTextStack.length > 0) {
+          // Adiciona ao buffer do nível anterior
+          inlineTextStack[inlineTextStack.length - 1].buffer += closedBuffer;
+        } else {
+          result += '\n' + '  '.repeat(indent - 1) + closedBuffer;
+        }
         indent = Math.max(indent - 1, 0);
         lastWasText = false;
+        lastTokenWasClosingTag = true;
         continue;
       }
       if (isClosing) {
-        // Sempre preserva a tag de fechamento, mesmo fora de contexto
-        // Se houver buffer aberto, despeja antes
-        if (bufferInlineText) {
-          result += '\n' + '  '.repeat(indent) + bufferInlineText;
-          bufferInlineText = '';
-          lastTagIsInlineText = false;
-          lastTag = null;
+        if (inlineTextStack.length > 0) {
+          result += '\n' + '  '.repeat(indent) + inlineTextStack.pop()!.buffer;
         }
         indent = Math.max(indent - 1, 0);
         result += '\n' + '  '.repeat(indent) + token.trim();
         lastWasText = false;
-        lastTag = null;
-        lastTagIsInlineText = false;
+        lastTokenWasClosingTag = true;
         continue;
       } else if (tagName && isInlineTextTag(tagName) && !isSelfClosing) {
-        // Se já houver buffer aberto, despeja antes de abrir novo
-        if (bufferInlineText) {
-          result += '\n' + '  '.repeat(indent) + bufferInlineText;
-          bufferInlineText = '';
-          lastTagIsInlineText = false;
-          lastTag = null;
-        }
-        bufferInlineText = token.trim();
-        lastTag = tagName;
-        lastTagIsInlineText = true;
+        inlineTextStack.push({ tag: tagName, buffer: token.trim() });
         indent++;
+        lastTokenWasClosingTag = false;
         continue;
       } else {
-        // Sempre preserva a tag de abertura, independente do tipo
-        // Se houver buffer aberto, despeja antes
-        if (bufferInlineText) {
-          result += '\n' + '  '.repeat(indent) + bufferInlineText;
-          bufferInlineText = '';
-          lastTagIsInlineText = false;
-          lastTag = null;
+        if (inlineTextStack.length > 0) {
+          result += '\n' + '  '.repeat(indent) + inlineTextStack.pop()!.buffer;
         }
         result += '\n' + '  '.repeat(indent) + token.trim();
         if (!isSelfClosing) {
           indent++;
         }
         lastWasText = false;
-        lastTag = tagName || null;
-        lastTagIsInlineText = false;
+        lastTokenWasClosingTag = false;
       }
     } else {
       // Texto
       const textContent = tokenObj.value.replace(/\s+/g, ' ').trim();
       if (textContent) {
-        if (lastTagIsInlineText) {
-          bufferInlineText += textContent;
+        if (inlineTextStack.length > 0) {
+          inlineTextStack[inlineTextStack.length - 1].buffer += textContent;
         } else {
-          // Se houver buffer aberto, despeja antes
-          if (bufferInlineText) {
-            result += '\n' + '  '.repeat(indent) + bufferInlineText;
-            bufferInlineText = '';
-            lastTagIsInlineText = false;
-            lastTag = null;
-          }
           result += '\n' + '  '.repeat(indent) + textContent;
         }
         lastWasText = true;
+        lastTokenWasClosingTag = false;
       }
     }
   }
-  // Ao final, se houver buffer aberto, despeja
-  if (bufferInlineText) {
-    result += '\n' + '  '.repeat(indent) + bufferInlineText;
+  // Ao final, se houver buffers abertos, despeja todos
+  while (inlineTextStack.length > 0) {
+    result += '\n' + '  '.repeat(indent) + inlineTextStack.pop()!.buffer;
   }
   // Remove quebras de linha duplicadas e espaços extras
   let processed = result
