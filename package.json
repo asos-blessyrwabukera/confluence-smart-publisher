@@ -2,7 +2,8 @@
   "name": "confluence-smart-publisher",
   "displayName": "Confluence-Smart-Publisher",
   "description": "Publique facilmente páginas no Confluence diretamente do seu VSCode",
-  "version": "0.0.1",
+  "version": "0.0.2",
+  "icon": "images/csp-icon.png",
   "engines": {
     "vscode": "^1.96.0"
   },
@@ -39,6 +40,10 @@
       {
         "command": "confluence-smart-publisher.syncWithPublished",
         "title": "Sincronizar com Publicado no Confluence"
+      },
+      {
+        "command": "confluence-smart-publisher.setEmojiTitle",
+        "title": "Definir emoji do título"
       }
     ],
     "submenus": [
@@ -82,6 +87,10 @@
         },
         {
           "command": "confluence-smart-publisher.syncWithPublished",
+          "when": "resourceExtname == .confluence"
+        },
+        {
+          "command": "confluence-smart-publisher.setEmojiTitle",
           "when": "resourceExtname == .confluence"
         }
       ]

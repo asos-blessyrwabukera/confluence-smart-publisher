@@ -534,7 +534,95 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	context.subscriptions.push(publishCmd, getPageByTitleCmd, getPageByIdCmd, createPageCmd, confluenceFormatter, tagCompletionProvider, formatConfluenceCmd, diffWithPublishedCmd, syncWithPublishedCmd);
+	// Comando para definir emoji do título com picker visual
+	const setEmojiTitleWebviewCmd = vscode.commands.registerCommand('confluence-smart-publisher.setEmojiTitle', async (uri: vscode.Uri) => {
+		if (!uri || !uri.fsPath.endsWith('.confluence')) {
+			vscode.window.showErrorMessage('Selecione um arquivo .confluence para definir o emoji do título.');
+			return;
+		}
+
+		const panel = vscode.window.createWebviewPanel(
+			'cspEmojiPicker',
+			'Selecione o Emoji do Título',
+			vscode.ViewColumn.Active,
+			{
+				enableScripts: true,
+			}
+		);
+
+		panel.webview.html = getEmojiPickerHtml(panel.webview, context.extensionUri);
+
+		panel.webview.onDidReceiveMessage(async (message) => {
+			if (message.command === 'emojiSelected') {
+				const emoji = message.emoji;
+				const codePoint = emoji.codePointAt(0)?.toString(16);
+				if (!codePoint) {
+					vscode.window.showErrorMessage('Erro ao obter código do emoji.');
+					return;
+				}
+				const fs = await import('fs');
+				let content = fs.readFileSync(uri.fsPath, 'utf-8');
+				const cspParamsRegex = /<csp:parameters[\s\S]*?<\/csp:parameters>/gi;
+				const cspPropertiesRegex = /<csp:properties>[\s\S]*?<\/csp:properties>/i;
+				const emojiKeysRegex = /<csp:key>emoji-title-draft<\/csp:key>\s*<csp:value>[a-zA-Z0-9]+<\/csp:value>\s*<csp:key>emoji-title-published<\/csp:key>\s*<csp:value>[a-zA-Z0-9]+<\/csp:value>/;
+				const emojiProps = `<csp:key>emoji-title-draft</csp:key>\n  <csp:value>${codePoint}</csp:value>\n  <csp:key>emoji-title-published</csp:key>\n  <csp:value>${codePoint}</csp:value>`;
+				let novoContent = content;
+				if (cspParamsRegex.test(content)) {
+					novoContent = content.replace(cspParamsRegex, (paramsBlock) => {
+						if (cspPropertiesRegex.test(paramsBlock)) {
+							return paramsBlock.replace(cspPropertiesRegex, (propertiesBlock) => {
+								if (emojiKeysRegex.test(propertiesBlock)) {
+									return propertiesBlock.replace(emojiKeysRegex, emojiProps);
+								} else {
+									return propertiesBlock.replace(/(<\/csp:properties>)/, `  ${emojiProps}\n$1`);
+								}
+							});
+						} else {
+							return paramsBlock.replace(/(<\/csp:parameters>)/, `  <csp:properties>\n  ${emojiProps}\n  </csp:properties>\n$1`);
+						}
+					});
+				} else {
+					novoContent = `<csp:parameters xmlns:csp=\"https://confluence.smart.publisher/csp\">\n  <csp:properties>\n  ${emojiProps}\n  </csp:properties>\n</csp:parameters>\n` + content;
+				}
+				fs.writeFileSync(uri.fsPath, novoContent, { encoding: 'utf-8' });
+				vscode.window.showInformationMessage('Emoji do título definido com sucesso!');
+				panel.dispose();
+			}
+		});
+	});
+
+	function getEmojiPickerHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
+		const nonce = Date.now().toString();
+		const emojiMartCdn = 'https://cdn.jsdelivr.net/npm/emoji-mart@5.4.0/dist/browser.js';
+		return `
+		<!DOCTYPE html>
+		<html lang="pt-br">
+		<head>
+			<meta charset="UTF-8">
+			<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-eval' 'unsafe-inline' ${webview.cspSource} https://cdn.jsdelivr.net; style-src ${webview.cspSource} 'unsafe-inline'; connect-src *; img-src data: https:;">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Selecionar Emoji</title>
+		</head>
+		<body>
+			<div id="picker"></div>
+			<script src="${emojiMartCdn}"></script>
+			<script nonce="${nonce}">
+				const picker = new EmojiMart.Picker({
+					onEmojiSelect: (emoji) => {
+						const vscode = acquireVsCodeApi();
+						vscode.postMessage({ command: 'emojiSelected', emoji: emoji.native });
+					},
+					locale: 'pt',
+					theme: 'auto',
+				});
+				document.getElementById('picker').appendChild(picker);
+			</script>
+		</body>
+		</html>
+		`;
+	}
+
+	context.subscriptions.push(publishCmd, getPageByTitleCmd, getPageByIdCmd, createPageCmd, confluenceFormatter, tagCompletionProvider, formatConfluenceCmd, diffWithPublishedCmd, syncWithPublishedCmd, setEmojiTitleWebviewCmd);
 }
 
 // This method is called when your extension is deactivated
