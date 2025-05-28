@@ -1,71 +1,122 @@
-# confluence-smart-publisher README
+# Confluence Smart Publisher
 
-This is the README for your extension "confluence-smart-publisher". After writing up a brief description, we recommend including the following sections.
+Extensão para o Visual Studio Code que permite criar, editar, publicar, baixar, comparar e sincronizar páginas do Confluence diretamente do seu editor, utilizando arquivos `.confluence` em formato XML customizado.
+Esta extenção utiliza o formato Confluence Storage.
 
-## Features
+## ✨ Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Publicação direta**: Publique arquivos `.confluence` como páginas no Confluence com um clique.
+- **Download de páginas**: Baixe páginas do Confluence por título ou ID, convertendo-as para o formato editável local.
+- **Sincronização**: Compare e sincronize o conteúdo local com o publicado no Confluence, escolhendo qual versão manter.
+- **Criação a partir de modelo**: Crie novos arquivos baseados em páginas-modelo do Confluence.
+- **Formatação automática**: Formate arquivos `.confluence` com regras específicas, incluindo numeração automática de capítulos.
+- **Validação de estrutura**: Diagnóstico em tempo real de tags obrigatórias, estrutura e atributos, exibindo problemas no VSCode.
+- **Autocompletar de tags**: Sugestões inteligentes para tags e atributos customizados do Confluence.
+- **Snippets inteligentes**: Sugestões automáticas de blocos de código XML para tags customizadas, com preenchimento de atributos obrigatórios e opcionais, agilizando a escrita de documentos. Basta escrever `csp` que as opções aparecerão como mágica!
+- **Modo HtmlEntities**: Suporte à conversão automática de caracteres especiais para entidades HTML ao publicar ou baixar páginas, evitando problemas de encoding e garantindo compatibilidade total com o Confluence.
 
-For example if there is an image subfolder under your extension project workspace:
+### 🚀 DIFERENCIAL: Sincronização de metadados!
 
-\!\[feature X\]\(images/feature-x.png\)
+> `Labels`, `Propriedades`, `PageId` e `ParentId` são mantidos sempre atualizados entre o arquivo local e a página remota no Confluence.  
+> **Qualquer alteração feita localmente (ou no Confluence) é refletida de forma transparente, evitando inconsistências e facilitando o controle de versões e organização dos seus documentos.**
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
 
-## Requirements
+## 📸 Exemplos
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+> Adicione aqui prints ou GIFs mostrando a publicação, download, diff e autocomplete em ação.
 
-## Extension Settings
+## ⚙️ Requisitos
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+- VS Code versão 1.96.0 ou superior.
+- Conta no Confluence Cloud (Atlassian) com permissão de edição.
+- API Token do Confluence (gere em [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)).
 
-For example:
+## 🔧 Configurações da Extensão
 
-This extension contributes the following settings:
+Esta extensão adiciona as seguintes configurações no VSCode:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+| Chave                                            | Descrição                                                                                   |
+|--------------------------------------------------|---------------------------------------------------------------------------------------------|
+| `confluenceSmartPublisher.baseUrl`               | URL base da sua instância Confluence (ex: https://empresa.atlassian.net/wiki)               |
+| `confluenceSmartPublisher.username`              | Usuário do Confluence (normalmente o e-mail)                                                |
+| `confluenceSmartPublisher.apiToken`              | API Token do Confluence                                                                     |
+| `confluenceSmartPublisher.format.numberChapters` | Numera automaticamente os capítulos ao formatar o documento `.confluence` (padrão: true)    |
+| `confluenceSmartPublisher.htmlEntitiesMode`      | Ativa a conversão automática de caracteres especiais para entidades HTML ao publicar ou baixar páginas (padrão: true) |
 
-## Known Issues
+## 🛠️ Comandos Disponíveis
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- **Publicar Documento**: Publica o arquivo `.confluence` selecionado no Confluence.
+- **Baixar Documento por Título**: Baixa uma página do Confluence pelo título.
+- **Baixar Documento por ID**: Baixa uma página do Confluence pelo ID.
+- **Criar Documento**: Cria um novo arquivo `.confluence` a partir de um modelo remoto.
+- **Formatar Documento**: Formata o arquivo `.confluence` aberto.
+- **Comparar Documento Local com o Publicado**: Exibe um diff entre o arquivo local e o publicado.
+- **Sincronizar com Publicado no Confluence**: Sincroniza o arquivo local com o conteúdo remoto, permitindo escolher a versão final.
+- **Snippets de Tags**: Ao digitar `<` ou `</` em arquivos `.confluence`, sugestões automáticas de tags, atributos e blocos XML são exibidas para agilizar a edição.
 
-## Release Notes
+Todos os comandos estão disponíveis no menu de contexto do explorador de arquivos ao clicar em arquivos `.confluence` ou pastas.
 
-Users appreciate release notes as you update your extension.
+## 📄 Estrutura dos Arquivos `.confluence`
 
-### 1.0.0
+Esta extenção adiciona um bloco `<csp:parameters>` ao documento, que é utilizado internamete, e que pode ter seus valores alterados.
 
-Initial release of ...
+- `<csp:file_id>`: ID da página no Confluence (preenchido automaticamente após a publicação).
+- `<csp:labels_list>`: Lista de labels separadas por vírgula. Inclusões e alteração serão refletidas na página online.
+- `<csp:parent_id>`: ID da página pai no Confluence.
+- `<csp:properties>`: Propriedades da página (chave/valor). Estas propriedades podem ser alteradas, excluídas ou incluidas novas. Mas cuidado pois alterações podem causar efeitos não esperados.
 
-### 1.0.1
+Exemplo:
+```xml
+<csp:parameters xmlns:csp="https://confluence.smart.publisher/csp">
+  <csp:file_id>123456</csp:file_id>
+  <csp:labels_list>user-story,escopo,pendente</csp:labels_list>
+  <csp:parent_id>654321</csp:parent_id>
+  <csp:properties>
+    <csp:key>content-appearance-published</csp:key>
+    <csp:value>fixed-width</csp:value>
+  </csp:properties>
+</csp:parameters>
+<!-- Conteúdo da página em formato Confluence Storage -->
+```
 
-Fixed issue #.
+## 🧩 Dependências
 
-### 1.1.0
+- [cheerio](https://www.npmjs.com/package/cheerio)
+- [fast-xml-parser](https://www.npmjs.com/package/fast-xml-parser)
+- [form-data](https://www.npmjs.com/package/form-data)
+- [node-fetch](https://www.npmjs.com/package/node-fetch)
+- [xml-escape](https://www.npmjs.com/package/xml-escape)
 
-Added features X, Y, and Z.
+## 🚧 Problemas Conhecidos
+
+- O formato dos arquivos `.confluence` deve seguir rigorosamente a estrutura esperada, senão a publicação pode falhar.
+- Apenas Confluence Cloud (Atlassian) é suportado.
+- Não há suporte para autenticação por senha, apenas por API Token.
+
+## 📝 Notas de Lançamento
+
+### 0.0.2
+
+- Novos snippets inteligentes para tags customizadas do Confluence.
+- Suporte ao modo HtmlEntities: conversão automática de caracteres especiais para entidades HTML ao publicar ou baixar páginas.
+
+### 0.0.1
+
+- Primeira versão pública: publicação, download, formatação, diff e sincronização de páginas do Confluence.
 
 ---
 
-## Following extension guidelines
+## 🧑‍💻 Contribuindo
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+Contribuições são bem-vindas! Siga as [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines) para garantir as melhores práticas.
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+## ℹ️ Mais Informações
 
-## Working with Markdown
+- [Documentação oficial do VSCode para extensões](https://code.visualstudio.com/api)
+- [Documentação oficial do Confluence Cloud REST API](https://developer.atlassian.com/cloud/confluence/rest/)
+- [Documentação oficial do Confluence Storage Format](https://confluence.atlassian.com/doc/confluence-storage-format-790796544.html)
+  - > Esta documentação é para a versão Data Center, mas também se aplica (pelo menos até o momento) para a versão Cloud.
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+---
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+_Divirta-se publicando no Confluence de forma inteligente!_

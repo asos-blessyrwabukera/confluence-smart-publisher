@@ -6,6 +6,8 @@
 
 import { allowedHierarchy, TAG_BEHAVIOR } from './confluenceSchema';
 import * as vscode from 'vscode';
+import { decode as decodeEntities } from 'entities';
+import { encode as encodeEntities } from 'entities';
 
 // Funções auxiliares padronizadas
 function isBlockTag(tag: string) {
@@ -263,4 +265,14 @@ function numberHeadings(text: string): string {
 function cleanHeadingContent(content: string): string {
   // Remove tudo que for número, ponto, traço, parêntese, colchete, chave e espaços do início
   return content.replace(/^[\s\n\r0-9.\-–—()\[\]{}]+/, '').replace(/^([ \t\n\r]*)/, '');
+}
+
+// Decodifica entidades HTML para seus caracteres equivalentes
+export function decodeHtmlEntities(text: string): string {
+  return decodeEntities(text);
+}
+
+// Codifica caracteres especiais para suas entidades HTML equivalentes
+export function encodeHtmlEntities(text: string): string {
+  return encodeEntities(text);
 } 

@@ -108,6 +108,11 @@
           "type": "boolean",
           "default": true,
           "description": "Numera automaticamente os capítulos ao formatar o documento .confluence"
+        },
+        "confluenceSmartPublisher.htmlEntitiesMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Decodificar entidades HTML ao baixar e codificar ao publicar arquivos Confluence."
         }
       }
     },
@@ -132,6 +137,12 @@
         "language": "confluence",
         "scopeName": "text.html.confluence",
         "path": "./syntaxes/confluence.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "confluence",
+        "path": "./confluence-storage.code-snippets"
       }
     ]
   },
@@ -166,6 +177,8 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0",
+    "dotenv": "^16.5.0",
+    "entities": "^6.0.0",
     "fast-xml-parser": "^5.2.3",
     "form-data": "^4.0.2",
     "node-fetch": "^2.7.0",
