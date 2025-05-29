@@ -59,4 +59,4 @@ coverage/
 src/test/
 
 # Arquivos documentação para testes
-.confluence
+*.confluence
