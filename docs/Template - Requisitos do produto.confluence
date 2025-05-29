@@ -1,0 +1,241 @@
+<csp:parameters xmlns:csp="https://confluence.smart.publisher/csp">
+  <csp:file_id>229531</csp:file_id>
+  <csp:labels_list></csp:labels_list>
+  <csp:parent_id>229495</csp:parent_id>
+  <csp:properties>
+    <csp:key>editor</csp:key>
+    <csp:value>v2</csp:value>
+    <csp:key>emoji-title-draft</csp:key>
+    <csp:value>270d</csp:value>
+    <csp:key>emoji-title-published</csp:key>
+    <csp:value>270d</csp:value>
+  </csp:properties>
+</csp:parameters>
+<ac:structured-macro ac:name="details" ac:schema-version="1" data-layout="default" ac:local-id="a750237f-a9f2-44f7-ae29-0fd5dbd51be8" ac:macro-id="d858d8e03b5e1daef385609bd282d5dd">
+  <ac:rich-text-body>
+    <table data-layout="default">
+      <colgroup>
+        <col style="width: 166.0px;" />
+        <col style="width: 560.0px;" />
+      </colgroup>
+      <tbody>
+        <tr><th><p><strong>Meta de lan&ccedil;amento</strong></p></th><td><p><span style="color: rgb(151,160,175);">Digite &sol;&sol; para adicionar a data de lan&ccedil;amento pretendida</span></p></td></tr>
+        <tr><th><p><strong>&Eacute;pico</strong></p></th><td><p><span style="color: rgb(151,160,175);">Digite &sol;Jira para adicionar epics e itens do Jira</span></p></td></tr>
+              <p>
+              <ac:structured-macro ac:name="status" ac:schema-version="1" ac:macro-id="185e9452-e5d1-41f2-8a2f-8575587f5a14">
+                <td>
+                <ac:parameter ac:name="title">
+                  <tr><th><p><strong>Status do documento</strong></p></th>RASCUNHO
+                </ac:parameter>
+              </ac:structured-macro>
+            </p>
+          </td>
+        </tr>
+        <tr><th><p><strong>Propriet&aacute;rio do documento</strong></p></th><td><p><span style="color: rgb(151,160,175);">&commat; mencione o propriet&aacute;rio</span></p></td></tr>
+        <tr><th><p><strong>Designer</strong></p></th><td><p><span style="color: rgb(151,160,175);">&commat; designer</span></p></td></tr>
+        <tr><th><p><strong>L&iacute;der t&eacute;cnico</strong></p></th><td><p><span style="color: rgb(151,160,175);">&commat; l&iacute;der</span></p></td></tr>
+        <tr><th><p><strong>Escritores t&eacute;cnicos</strong></p></th><td><p><span style="color: rgb(151,160,175);">&commat; escritores</span></p></td></tr>
+            <td>
+            <p />
+            <tr><th><p><strong>GQ</strong></p></th>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </ac:rich-text-body>
+</ac:structured-macro>
+  <h2>1
+  <ac:emoticon ac:name="blue-star" ac:emoji-shortname=":dart:" ac:emoji-id="1f3af" ac:emoji-fallback="🎯" />
+  &nbsp;Objetivo
+</h2>
+  <p>
+  <ac:placeholder>
+    Explique o contexto deste projeto e como ele se encaixa nos objetivos estrat&eacute;gicos da organiza&ccedil;&atilde;o&period;
+  </ac:placeholder>
+</p>
+  <h2>2
+  <ac:emoticon ac:name="blue-star" ac:emoji-shortname=":bar_chart:" ac:emoji-id="1f4ca" ac:emoji-fallback="\uD83D\uDCCA" />
+  &nbsp;Indicadores de sucesso
+</h2>
+  <p>
+  <ac:placeholder>
+    Liste as metas do projeto e as m&eacute;tricas que voc&ecirc; vai usar para analisar o grau de sucesso&period;
+  </ac:placeholder>
+</p>
+<table data-layout="default">
+  <colgroup>
+    <col style="width: 371.0px;" />
+    <col style="width: 389.0px;" />
+  </colgroup>
+  <tbody>
+    <tr><th data-highlight-colour="var(--ds-background-accent-teal-subtlest, #e6fcff)"><p><strong>Meta</strong></p></th><th data-highlight-colour="var(--ds-background-accent-teal-subtlest, #e6fcff)"><p><strong>Indicador</strong></p></th></tr>
+          <p>
+          <ac:placeholder>
+            <td>por exemplo&comma; simplificar a experi&ecirc;ncia do usu&aacute;rio
+          </ac:placeholder>
+          <tr>
+        </p>
+      </td>
+          <p>
+          <ac:placeholder>
+            <td>por exemplo&comma; o &iacute;ndice de satisfa&ccedil;&atilde;o do cliente aumenta
+          </ac:placeholder>
+        </p>
+      </td>
+    </tr>
+        <td>
+        <p />
+        <tr>
+      </td>
+        <td>
+        <p />
+      </td>
+    </tr>
+  </tbody>
+</table>
+  <h2>3
+  <ac:emoticon ac:name="blue-star" ac:emoji-shortname=":thinking:" ac:emoji-id="1f914" ac:emoji-fallback="\uD83E\uDD14" />
+  &nbsp;Premissas
+</h2>
+  <p>
+  <ac:placeholder>
+    Liste todas as suposi&ccedil;&otilde;es que voc&ecirc; tem sobre os usu&aacute;rios&comma; as restri&ccedil;&otilde;es t&eacute;cnicas ou as metas de neg&oacute;cios&period;
+  </ac:placeholder>
+</p>
+  <h2>4
+  <ac:emoticon ac:name="blue-star" ac:emoji-shortname=":star2:" ac:emoji-id="1f31f" ac:emoji-fallback="\uD83C\uDF1F" />
+  &nbsp;Conquistas
+</h2>
+  <p>
+  <ac:placeholder>
+    Digite &sol;planner para criar um roteiro visual e ajudar a equipe a manter o foco&period; Para editar fluxos de trabalho ou datas&comma; selecione o espa&ccedil;o reservado e toque no &iacute;cone de l&aacute;pis&period;
+  </ac:placeholder>
+</p>
+<ac:structured-macro ac:name="roadmap" ac:schema-version="1" data-layout="default" ac:local-id="bd778e88-508d-4497-8f82-8e5c714afae8" ac:macro-id="ac0eb7fa-f06f-4569-9830-8889242be02b">
+  <ac:parameter ac:name="maplinks" />
+  <ac:parameter ac:name="timeline">
+    true
+  </ac:parameter>
+  <ac:parameter ac:name="source">
+    &percnt;7B&percnt;22title&percnt;22&percnt;3A&percnt;22Roadmap&percnt;20Planner&percnt;22&percnt;2C&percnt;22timeline&percnt;22&percnt;3A&percnt;7B&percnt;22startDate&percnt;22&percnt;3A&percnt;222021-12-16&percnt;2000&percnt;3A00&percnt;3A00&percnt;22&percnt;2C&percnt;22endDate&percnt;22&percnt;3A&percnt;222022-07-16&percnt;2000&percnt;3A00&percnt;3A00&percnt;22&percnt;2C&percnt;22displayOption&percnt;22&percnt;3A&percnt;22MONTH&percnt;22&percnt;7D&percnt;2C&percnt;22lanes&percnt;22&percnt;3A&percnt;5B&percnt;7B&percnt;22title&percnt;22&percnt;3A&percnt;22Dashboard&percnt;22&percnt;2C&percnt;22color&percnt;22&percnt;3A&percnt;7B&percnt;22lane&percnt;22&percnt;3A&percnt;22&percnt;23f6c342&percnt;22&percnt;2C&percnt;22bar&percnt;22&percnt;3A&percnt;22&percnt;23fadb8e&percnt;22&percnt;2C&percnt;22text&percnt;22&percnt;3A&percnt;22&percnt;23594300&percnt;22&percnt;2C&percnt;22count&percnt;22&percnt;3A1&percnt;7D&percnt;2C&percnt;22bars&percnt;22&percnt;3A&percnt;5B&percnt;7B&percnt;22title&percnt;22&percnt;3A&percnt;22Feature&percnt;201&percnt;22&percnt;2C&percnt;22description&percnt;22&percnt;3A&percnt;22This&percnt;20is&percnt;20the&percnt;20first&percnt;20bar&period;&percnt;22&percnt;2C&percnt;22startDate&percnt;22&percnt;3A&percnt;222021-12-10&percnt;2019&percnt;3A43&percnt;3A21&percnt;22&percnt;2C&percnt;22duration&percnt;22&percnt;3A2&percnt;2C&percnt;22rowIndex&percnt;22&percnt;3A0&percnt;2C&percnt;22id&percnt;22&percnt;3A&percnt;22eeb2d902-e723-4ff0-a10d-43a5793089a4&percnt;22&percnt;2C&percnt;22pageLink&percnt;22&percnt;3A&percnt;7B&percnt;7D&percnt;7D&percnt;2C&percnt;7B&percnt;22title&percnt;22&percnt;3A&percnt;22Feature&percnt;202&percnt;22&percnt;2C&percnt;22description&percnt;22&percnt;3A&percnt;22This&percnt;20is&percnt;20the&percnt;20second&percnt;20bar&period;&percnt;22&percnt;2C&percnt;22startDate&percnt;22&percnt;3A&percnt;222021-12-20&percnt;2000&percnt;3A42&percnt;3A46&percnt;22&percnt;2C&percnt;22duration&percnt;22&percnt;3A2&period;594059405940594&percnt;2C&percnt;22rowIndex&percnt;22&percnt;3A3&percnt;2C&percnt;22id&percnt;22&percnt;3A&percnt;220e8f437c-39f1-4d70-b85b-3ca89fd57a00&percnt;22&percnt;2C&percnt;22pageLink&percnt;22&percnt;3A&percnt;7B&percnt;7D&percnt;7D&percnt;2C&percnt;7B&percnt;22rowIndex&percnt;22&percnt;3A1&percnt;2C&percnt;22startDate&percnt;22&percnt;3A&percnt;222022-03-13&percnt;2007&percnt;3A39&percnt;3A12&percnt;22&percnt;2C&percnt;22id&percnt;22&percnt;3A&percnt;2290251c8c-3b74-4d2b-b850-684ffd40514b&percnt;22&percnt;2C&percnt;22title&percnt;22&percnt;3A&percnt;22Feature&percnt;203&percnt;22&percnt;2C&percnt;22description&percnt;22&percnt;3A&percnt;22&percnt;22&percnt;2C&percnt;22duration&percnt;22&percnt;3A2&period;00990099009901&percnt;2C&percnt;22pageLink&percnt;22&percnt;3A&percnt;7B&percnt;7D&percnt;7D&percnt;2C&percnt;7B&percnt;22rowIndex&percnt;22&percnt;3A2&percnt;2C&percnt;22startDate&percnt;22&percnt;3A&percnt;222022-04-24&percnt;2011&percnt;3A10&percnt;3A05&percnt;22&percnt;2C&percnt;22id&percnt;22&percnt;3A&percnt;22d0529fe8-6c8c-45e8-8078-d75c2f063dd9&percnt;22&percnt;2C&percnt;22title&percnt;22&percnt;3A&percnt;22Feature&percnt;204&percnt;22&percnt;2C&percnt;22description&percnt;22&percnt;3A&percnt;22&percnt;22&percnt;2C&percnt;22duration&percnt;22&percnt;3A2&period;01980198019802&percnt;2C&percnt;22pageLink&percnt;22&percnt;3A&percnt;7B&percnt;7D&percnt;7D&percnt;5D&percnt;7D&percnt;2C&percnt;7B&percnt;22title&percnt;22&percnt;3A&percnt;22Notification&percnt;22&percnt;2C&percnt;22color&percnt;22&percnt;3A&percnt;7B&percnt;22lane&percnt;22&percnt;3A&percnt;22&percnt;233b7fc4&percnt;22&percnt;2C&percnt;22bar&percnt;22&percnt;3A&percnt;22&percnt;236c9fd3&percnt;22&percnt;2C&percnt;22text&percnt;22&percnt;3A&percnt;22&percnt;23ffffff&percnt;22&percnt;2C&percnt;22count&percnt;22&percnt;3A1&percnt;7D&percnt;2C&percnt;22bars&percnt;22&percnt;3A&percnt;5B&percnt;7B&percnt;22title&percnt;22&percnt;3A&percnt;22iOS&percnt;20App&percnt;22&percnt;2C&percnt;22description&percnt;22&percnt;3A&percnt;22This&percnt;20is&percnt;20the&percnt;20third&percnt;20bar&period;&percnt;22&percnt;2C&percnt;22startDate&percnt;22&percnt;3A&percnt;222022-01-13&percnt;2014&percnt;3A01&percnt;3A11&percnt;22&percnt;2C&percnt;22duration&percnt;22&percnt;3A2&period;5&percnt;2C&percnt;22rowIndex&percnt;22&percnt;3A0&percnt;2C&percnt;22id&percnt;22&percnt;3A&percnt;22dd93afcd-2704-4253-adb8-809a336cc5ba&percnt;22&percnt;2C&percnt;22pageLink&percnt;22&percnt;3A&percnt;7B&percnt;7D&percnt;7D&percnt;2C&percnt;7B&percnt;22rowIndex&percnt;22&percnt;3A0&percnt;2C&percnt;22startDate&percnt;22&percnt;3A&percnt;222022-04-23&percnt;2013&percnt;3A46&percnt;3A55&percnt;22&percnt;2C&percnt;22id&percnt;22&percnt;3A&percnt;228dc8bc2d-b7cb-44a8-b526-7d1ede51f690&percnt;22&percnt;2C&percnt;22title&percnt;22&percnt;3A&percnt;22Android&percnt;22&percnt;2C&percnt;22description&percnt;22&percnt;3A&percnt;22&percnt;22&percnt;2C&percnt;22duration&percnt;22&percnt;3A2&period;4752475247524752&percnt;2C&percnt;22pageLink&percnt;22&percnt;3A&percnt;7B&percnt;7D&percnt;7D&percnt;5D&percnt;7D&percnt;5D&percnt;2C&percnt;22markers&percnt;22&percnt;3A&percnt;5B&percnt;7B&percnt;22title&percnt;22&percnt;3A&percnt;22Milestone&percnt;201&percnt;22&percnt;2C&percnt;22markerDate&percnt;22&percnt;3A&percnt;222022-04-28&percnt;2007&percnt;3A50&percnt;3A29&percnt;22&percnt;7D&percnt;2C&percnt;7B&percnt;22markerDate&percnt;22&percnt;3A&percnt;222022-08-25&percnt;2020&percnt;3A40&percnt;3A23&percnt;22&percnt;2C&percnt;22title&percnt;22&percnt;3A&percnt;22Go&percnt;2FNo&percnt;20go&percnt;22&percnt;7D&percnt;2C&percnt;7B&percnt;22markerDate&percnt;22&percnt;3A&percnt;222022-06-25&percnt;2008&percnt;3A33&percnt;3A16&percnt;22&percnt;2C&percnt;22title&percnt;22&percnt;3A&percnt;22Milestone&percnt;202&percnt;22&percnt;7D&percnt;5D&percnt;7D
+  </ac:parameter>
+  <ac:parameter ac:name="pagelinks" />
+  <ac:parameter ac:name="title">
+    Roadmap&percnt;20Planner
+  </ac:parameter>
+  <ac:parameter ac:name="hash">
+    cfdf6478a845bded2fc6786da3b93b66
+  </ac:parameter>
+</ac:structured-macro>
+  <p>
+  <ac:placeholder>
+    Digite &sol;trello para adicionar um cart&atilde;o ou painel a esta p&aacute;gina ou &sol;jira para incluir um item&comma; gr&aacute;fico ou projeto do Jira&period;
+  </ac:placeholder>
+</p>
+  <h2>5
+  <ac:emoticon ac:name="blue-star" ac:emoji-shortname=":notepad_spiral:" ac:emoji-id="1f5d2" ac:emoji-fallback="\uD83D\uDDD2" />
+  &nbsp;Requisitos
+</h2>
+<table data-layout="default">
+  <colgroup>
+    <col style="width: 204.0px;" />
+    <col style="width: 216.0px;" />
+    <col style="width: 123.0px;" />
+    <col style="width: 111.0px;" />
+    <col style="width: 106.0px;" />
+  </colgroup>
+  <tbody>
+    <tr><th><p><strong>Requisitos</strong></p></th><th><p><strong>Hist&oacute;ria do usu&aacute;rio</strong></p></th><th><p><strong>Import&acirc;ncia</strong></p></th><th><p><strong>Item do Jira</strong></p></th><th><p><strong>Notas</strong></p></th></tr>
+          <p>
+          <ac:placeholder>
+            <td>por exemplo&comma; deve responder com rapidez a dispositivos m&oacute;veis
+          </ac:placeholder>
+          <tr>
+        </p>
+      </td>
+          <p>
+          <ac:placeholder>
+            <td>por exemplo&comma; o John &eacute; um gerente de projetos que quer verificar o progresso completo da equipe
+          </ac:placeholder>
+        </p>
+      </td>
+          <p>
+          <ac:structured-macro ac:name="status" ac:schema-version="1" ac:macro-id="7b1e4116-8c57-4a77-9b3c-c50ea155e02d">
+            <td>
+            <ac:parameter ac:name="title">
+              ALTA
+            </ac:parameter>
+            <ac:parameter ac:name="colour">
+              Red
+            </ac:parameter>
+          </ac:structured-macro>
+        </p>
+      </td>
+        <td>
+        <p />
+      </td>
+        <td>
+        <p />
+      </td>
+    </tr>
+    <tr><td><p>&nbsp;</p></td><td><p>&nbsp;</p></td><td><p>&nbsp;</p></td><td><p>&nbsp;</p></td><td><p>&nbsp;</p></td></tr>
+  </tbody>
+</table>
+  <h2>6
+  <ac:emoticon ac:name="blue-star" ac:emoji-shortname=":art:" ac:emoji-id="1f3a8" ac:emoji-fallback="\uD83C\uDFA8" />
+  &nbsp;Intera&ccedil;&atilde;o do usu&aacute;rio e design
+</h2>
+  <p>
+  <ac:placeholder>
+    Digite &sol;imagem para adicionar maquetes&comma; diagramas e capturas de tela relacionadas aos requisitos&period;
+  </ac:placeholder>
+</p>
+  <h2>7
+  <ac:emoticon ac:name="question" ac:emoji-shortname=":question_mark:" ac:emoji-id="atlassian-question_mark" ac:emoji-fallback=":question_mark:" />
+  &nbsp;Perguntas em aberto
+</h2>
+<table data-layout="default">
+  <colgroup>
+    <col style="width: 250.0px;" />
+    <col style="width: 337.0px;" />
+    <col style="width: 173.0px;" />
+  </colgroup>
+  <tbody>
+    <tr><th data-highlight-colour="var(--ds-background-accent-blue-subtlest, #deebff)"><p><strong>Pergunta</strong></p></th><th data-highlight-colour="var(--ds-background-accent-blue-subtlest, #deebff)"><p><strong>Resposta</strong></p></th><th data-highlight-colour="var(--ds-background-accent-blue-subtlest, #deebff)"><p><strong>Data de resposta</strong></p></th></tr>
+          <p>
+          <ac:placeholder>
+            <td>Por exemplo&comma; como a gente pode informar melhor os usu&aacute;rios dessa fun&ccedil;&atilde;o&quest;
+          </ac:placeholder>
+          <tr>
+        </p>
+      </td>
+          <p>
+          <ac:placeholder>
+            <td>por exemplo&comma; a gente vai anunciar a fun&ccedil;&atilde;o com um blog e uma apresenta&ccedil;&atilde;o
+          </ac:placeholder>
+        </p>
+      </td>
+          <p>
+          <ac:placeholder>
+            <td>Digite &sol;&sol; para adicionar uma data
+          </ac:placeholder>
+        </p>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p />
+  <h2>8
+  <ac:emoticon ac:name="warning" ac:emoji-shortname=":warning:" ac:emoji-id="atlassian-warning" ac:emoji-fallback=":warning:" />
+  &nbsp;Fora do escopo
+</h2>
+  <p>
+  <ac:placeholder>
+    Listar as fun&ccedil;&otilde;es discutidas&comma; que est&atilde;o fora do escopo ou que podem ser revistos em uma vers&atilde;o posterior&period;
+  </ac:placeholder>
+</p>
+<ul>
+    <li>
+    <p />
+  </li>
+</ul>

@@ -622,7 +622,32 @@ export function activate(context: vscode.ExtensionContext) {
 		`;
 	}
 
-	context.subscriptions.push(publishCmd, getPageByTitleCmd, getPageByIdCmd, createPageCmd, confluenceFormatter, tagCompletionProvider, formatConfluenceCmd, diffWithPublishedCmd, syncWithPublishedCmd, setEmojiTitleWebviewCmd);
+	// Comando para decodificar entidades HTML em arquivos .confluence
+	const decodeHtmlCmd = vscode.commands.registerCommand('confluence-smart-publisher.decodeHtml', async (uri: vscode.Uri) => {
+		if (!uri || !uri.fsPath.endsWith('.confluence')) {
+			vscode.window.showErrorMessage('Selecione um arquivo .confluence para decodificar.');
+			return;
+		}
+		try {
+			const document = await vscode.workspace.openTextDocument(uri);
+			const editor = await vscode.window.showTextDocument(document, { preview: false });
+			const { decodeHtmlEntities } = await import('./confluenceFormatter.js');
+			const decoded = decodeHtmlEntities(document.getText());
+			await editor.edit(editBuilder => {
+				const start = new vscode.Position(0, 0);
+				const end = new vscode.Position(document.lineCount, 0);
+				editBuilder.replace(new vscode.Range(start, end), decoded);
+			});
+			outputChannel.appendLine(`[Decodificar HTML] Arquivo decodificado: ${uri.fsPath}`);
+			vscode.window.showInformationMessage('Entidades HTML decodificadas com sucesso!');
+		} catch (e: any) {
+			outputChannel.appendLine(`[Decodificar HTML] Erro ao decodificar: ${e.message || e}`);
+			outputChannel.show(true);
+			vscode.window.showErrorMessage(`Erro ao decodificar entidades HTML: ${e.message || e}`);
+		}
+	});
+
+	context.subscriptions.push(publishCmd, getPageByTitleCmd, getPageByIdCmd, createPageCmd, confluenceFormatter, tagCompletionProvider, formatConfluenceCmd, diffWithPublishedCmd, syncWithPublishedCmd, setEmojiTitleWebviewCmd, decodeHtmlCmd);
 }
 
 // This method is called when your extension is deactivated

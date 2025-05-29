@@ -13,7 +13,7 @@ Esta extenção utiliza o formato Confluence Storage.
 - **Validação de estrutura**: Diagnóstico em tempo real de tags obrigatórias, estrutura e atributos, exibindo problemas no VSCode.
 - **Autocompletar de tags**: Sugestões inteligentes para tags e atributos customizados do Confluence.
 - **Snippets inteligentes**: Sugestões automáticas de blocos de código XML para tags customizadas, com preenchimento de atributos obrigatórios e opcionais, agilizando a escrita de documentos. Basta escrever `csp` que as opções aparecerão como mágica!
-- **Modo HtmlEntities**: Suporte à conversão automática de caracteres especiais para entidades HTML ao publicar ou baixar páginas, evitando problemas de encoding e garantindo compatibilidade total com o Confluence.
+- **Html Entities Decode**: Conversão automática de entidades HTML para caracteres especiais ao baixar páginas.
 
 ### 🚀 DIFERENCIAL: Sincronização de metadados!
 
@@ -41,7 +41,7 @@ Esta extensão adiciona as seguintes configurações no VSCode:
 | `confluenceSmartPublisher.username`              | Usuário do Confluence (normalmente o e-mail)                                                |
 | `confluenceSmartPublisher.apiToken`              | API Token do Confluence                                                                     |
 | `confluenceSmartPublisher.format.numberChapters` | Numera automaticamente os capítulos ao formatar o documento `.confluence` (padrão: true)    |
-| `confluenceSmartPublisher.htmlEntitiesMode`      | Ativa a conversão automática de caracteres especiais para entidades HTML ao publicar ou baixar páginas (padrão: true) |
+| `confluenceSmartPublisher.htmlEntitiesDecode`      | Ativa a conversão automática de entidades HTML para caracteres especiais ao baixar páginas (padrão: false) |
 
 ## 🛠️ Comandos Disponíveis
 
@@ -52,9 +52,52 @@ Esta extensão adiciona as seguintes configurações no VSCode:
 - **Formatar Documento**: Formata o arquivo `.confluence` aberto.
 - **Comparar Documento Local com o Publicado**: Exibe um diff entre o arquivo local e o publicado.
 - **Sincronizar com Publicado no Confluence**: Sincroniza o arquivo local com o conteúdo remoto, permitindo escolher a versão final.
-- **Snippets de Tags**: Ao digitar `<` ou `</` em arquivos `.confluence`, sugestões automáticas de tags, atributos e blocos XML são exibidas para agilizar a edição.
+- **Snippets de Tags**: Ao digitar `csp:` em arquivos `.confluence`, sugestões automáticas de tags, atributos e blocos de macros do Confluence são exibidas para agilizar a edição.
+- **Decodificar entidades HTML**: Converte entidades HTML (&amp;lt;, &amp;gt;, &amp;amp;, etc.) em caracteres especiais no arquivo `.confluence` selecionado, facilitando a leitura e edição do conteúdo baixado.
 
 Todos os comandos estão disponíveis no menu de contexto do explorador de arquivos ao clicar em arquivos `.confluence` ou pastas.
+
+### 🔄 Fluxo do Comando "Publicar Documento"
+
+O comando **Publicar Documento** (`publishConfluence`) executa uma série de etapas para garantir que o conteúdo do arquivo `.confluence` seja corretamente publicado ou atualizado no Confluence, mantendo metadados e propriedades sincronizados. Veja o fluxo detalhado:
+
+1. **Ação do Usuário**
+   - O usuário clica com o botão direito em um arquivo `.confluence` e seleciona "Publicar Documento" ou executa o comando correspondente pelo menu de comandos do VSCode.
+
+2. **Validação Inicial**
+   - O comando verifica se o arquivo selecionado possui a extensão `.confluence`. Se não for, exibe uma mensagem de erro.
+
+3. **Leitura do Arquivo**
+   - O conteúdo do arquivo é lido para análise e extração de informações.
+
+4. **Verificação de ID da Página**
+   - O sistema procura pela tag `<csp:file_id>` no bloco `<csp:parameters>`.
+     - **Se existir**: entende que a página já foi publicada anteriormente e realiza uma atualização (update) no Confluence.
+     - **Se não existir**: cria uma nova página no Confluence.
+
+5. **Criação ou Atualização da Página**
+   - **Criação**:
+     - Extrai informações como título, `parentId`, labels e propriedades do bloco `<csp:parameters>`.
+     - Remove o bloco `<csp:parameters>` do conteúdo antes de enviar para o Confluence.
+     - Cria a página via API REST do Confluence.
+     - Se houver imagens locais referenciadas, faz um segundo update para anexá-las corretamente.
+   - **Atualização**:
+     - Extrai o ID da página.
+     - Remove o bloco `<csp:parameters>` do conteúdo.
+     - Atualiza o conteúdo da página via API REST.
+     - Se houver imagens locais referenciadas, faz um segundo update para anexá-las corretamente.
+
+6. **Sincronização de Metadados**
+   - Adiciona labels definidas na tag `<csp:labels_list>`.
+   - Atualiza propriedades definidas na tag `<csp:properties>`.
+
+7. **Persistência do ID**
+   - Se a página foi criada (não existia `<csp:file_id>`), grava o novo ID no início do arquivo local, dentro do bloco `<csp:parameters>`.
+
+8. **Feedback ao Usuário**
+   - Exibe uma mensagem de sucesso com o ID da página publicada ou uma mensagem de erro, caso algo falhe.
+
+> **Observação:** Todo o fluxo é executado de forma transparente, com logs no painel "Confluence Smart Publisher" do VSCode para facilitar o diagnóstico em caso de problemas.
 
 ## 📄 Estrutura dos Arquivos `.confluence`
 
@@ -82,27 +125,23 @@ Exemplo:
 ## 🧩 Dependências
 
 - [cheerio](https://www.npmjs.com/package/cheerio)
+  - Manipulação e parsing de HTML/XML no estilo jQuery, facilitando a extração e modificação de elementos.
 - [fast-xml-parser](https://www.npmjs.com/package/fast-xml-parser)
+  - Conversão rápida entre XML e JSON, essencial para ler e validar arquivos `.confluence`.
 - [form-data](https://www.npmjs.com/package/form-data)
+  - Criação de formulários multipart para upload de arquivos (ex: anexar imagens ao Confluence via API).
 - [node-fetch](https://www.npmjs.com/package/node-fetch)
+  - Realiza requisições HTTP/HTTPS, permitindo comunicação com a API do Confluence.
 - [xml-escape](https://www.npmjs.com/package/xml-escape)
+  - Escapa caracteres especiais para garantir XML válido ao publicar ou baixar conteúdo.
+- [emoji-mart](https://github.com/missive/emoji-mart)
+  - Picker de emojis utilizado na extensão
 
 ## 🚧 Problemas Conhecidos
 
 - O formato dos arquivos `.confluence` deve seguir rigorosamente a estrutura esperada, senão a publicação pode falhar.
 - Apenas Confluence Cloud (Atlassian) é suportado.
 - Não há suporte para autenticação por senha, apenas por API Token.
-
-## 📝 Notas de Lançamento
-
-### 0.0.2
-
-- Novos snippets inteligentes para tags customizadas do Confluence.
-- Suporte ao modo HtmlEntities: conversão automática de caracteres especiais para entidades HTML ao publicar ou baixar páginas.
-
-### 0.0.1
-
-- Primeira versão pública: publicação, download, formatação, diff e sincronização de páginas do Confluence.
 
 ---
 
@@ -115,7 +154,7 @@ Contribuições são bem-vindas! Siga as [Extension Guidelines](https://code.vis
 - [Documentação oficial do VSCode para extensões](https://code.visualstudio.com/api)
 - [Documentação oficial do Confluence Cloud REST API](https://developer.atlassian.com/cloud/confluence/rest/)
 - [Documentação oficial do Confluence Storage Format](https://confluence.atlassian.com/doc/confluence-storage-format-790796544.html)
-  - > Esta documentação é para a versão Data Center, mas também se aplica (pelo menos até o momento) para a versão Cloud.
+  - > Esta documentação é para a versão Data Center, mas boa parte se aplica para a versão Cloud.
 
 ---
 

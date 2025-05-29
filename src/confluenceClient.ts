@@ -4,7 +4,7 @@ import * as path from 'path';
 import FormData from 'form-data';
 // @ts-ignore
 import xmlEscape from 'xml-escape';
-import { decodeHtmlEntities, encodeHtmlEntities } from './confluenceFormatter';
+import { decodeHtmlEntities } from './confluenceFormatter';
 
 export enum BodyFormat {
     VIEW = 'view',
@@ -65,7 +65,7 @@ export class ConfluenceClient {
             conteudo = page.body?.[formato]?.value;
             // Decodifica entidades HTML se o parâmetro estiver ativado
             const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
-            if (config.get('htmlEntitiesMode', false)) {
+            if (config.get('htmlEntitiesDecode', false)) {
                 conteudo = decodeHtmlEntities(conteudo);
             }
         } catch {
@@ -310,9 +310,7 @@ export class ConfluenceClient {
         const pasta = path.dirname(filePath);
         const parentFile = path.join(pasta, '.parent');
         let content = fs.readFileSync(filePath, 'utf-8');
-        if (config.get('htmlEntitiesMode', false)) {
-            content = encodeHtmlEntities(content);
-        }
+
         content = content.replace(/\n +/g, '\n');
 
         // Extrair informações
@@ -397,18 +395,14 @@ export class ConfluenceClient {
     async updatePageFromFile(filePath: string): Promise<any> {
         const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
         let content = fs.readFileSync(filePath, 'utf-8');
-        if (config.get('htmlEntitiesMode', false)) {
-            content = encodeHtmlEntities(content);
-        }
+
         content = content.replace(/\n +/g, '\n');
         const match = content.match(/<csp:file_id>(.*?)<\/csp:file_id>/);
         if (!match) {throw new Error('Tag <csp:file_id> não encontrada no arquivo.');}
         const pageId = match[1].trim();
         if (!/^\d+$/.test(pageId)) {throw new Error(`ID da página inválido na tag <csp:file_id>: ${pageId}`);}
         let contentToSend = content.replace(/<csp:parameters[\s\S]*?<\/csp:parameters>\s*/g, '');
-        if (config.get('htmlEntitiesMode', false)) {
-            contentToSend = encodeHtmlEntities(contentToSend);
-        }
+
         const pasta = path.dirname(filePath);
         contentToSend = await this._processImagesInContent(contentToSend, pageId, pasta);
         const page = await this.getPageById(pageId);

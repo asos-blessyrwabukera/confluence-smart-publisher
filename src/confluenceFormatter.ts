@@ -6,8 +6,7 @@
 
 import { allowedHierarchy, TAG_BEHAVIOR } from './confluenceSchema';
 import * as vscode from 'vscode';
-import { decode as decodeEntities } from 'entities';
-import { encode as encodeEntities } from 'entities';
+import { decode as decodeEntities, encode as encodeEntities, EntityLevel } from 'entities';
 
 // Funções auxiliares padronizadas
 function isBlockTag(tag: string) {
@@ -267,12 +266,13 @@ function cleanHeadingContent(content: string): string {
   return content.replace(/^[\s\n\r0-9.\-–—()\[\]{}]+/, '').replace(/^([ \t\n\r]*)/, '');
 }
 
-// Decodifica entidades HTML para seus caracteres equivalentes
+// Decodifica entidades HTML apenas nos textos entre as tags, preservando tags e atributos
 export function decodeHtmlEntities(text: string): string {
-  return decodeEntities(text);
-}
-
-// Codifica caracteres especiais para suas entidades HTML equivalentes
-export function encodeHtmlEntities(text: string): string {
-  return encodeEntities(text);
+  // Expressão regular para separar tags e textos
+  // Usar { level: EntityLevel.HTML } para garantir decodificação de todas entidades HTML (ex: &ccedil;, &eacute;)
+  return text.replace(/(<[^>]+>)|([^<]+)/g, (match, tag, txt) => {
+    if (tag) {return tag;} // Mantém a tag intacta
+    if (txt) {return decodeEntities(txt, { level: EntityLevel.HTML });} // Decodifica todas entidades HTML
+    return match;
+  });
 } 
