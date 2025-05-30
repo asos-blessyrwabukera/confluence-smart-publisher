@@ -1,9 +1,12 @@
 ---
 description: 
-globs: *.ts
-alwaysApply: false
+globs: 
+alwaysApply: true
 ---
 Guideline TypeScript para Projetos Node.js/Extensões VS Code
+
+Validação
+- Antes de implementa qualquer código, explique o que será feito e aguarde a minha confoirmação para seguir com a implementação.
 
 Estrutura e Organização
 - Mantenha o projeto modular: separe funcionalidades em arquivos e pastas lógicas (ex: src/utils, src/services, src/commands).
@@ -30,6 +33,7 @@ Boas Práticas
 - Prefira funções pequenas e com responsabilidade única.
 - Valide entradas e trate erros de forma clara.
 - Mantenha o código limpo e legível.
+- Siga as recomendações e exemplos definidos em https://code.visualstudio.com/api e suas subpáginas.
 
 Dependências
 - Mantenha o package.json e o arquivo de dependências sempre atualizados.
@@ -44,7 +48,8 @@ Versionamento e Documentação
 Testes
 - Implemente testes unitários para funções críticas.
 - Prefira ferramentas como Jest ou Vitest para testes em TypeScript.
-- Documente como rodar os testes no README.
+- Documente como rodar os testes no README-TESTS.md.
+- Scripts de testes devem ser salvos na pasta src\test
 
 Lint e Formatação
 - Use ESLint e Prettier para manter o padrão de código.
