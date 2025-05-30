@@ -227,7 +227,7 @@ export function activate(context: vscode.ExtensionContext) {
 			const editor = await vscode.window.showTextDocument(document, { preview: false });
 			const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
 			const numberChapters = config.get('format.numberChapters', false);
-			const formatted = formatConfluenceDocument(document.getText(), numberChapters);
+			const formatted = formatConfluenceDocument(document.getText(), numberChapters, outputChannel);
 			await editor.edit(editBuilder => {
 				const start = new vscode.Position(0, 0);
 				const end = new vscode.Position(document.lineCount, 0);
@@ -250,7 +250,7 @@ export function activate(context: vscode.ExtensionContext) {
 			try {
 				const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
 				const numberChapters = config.get('format.numberChapters', false);
-				formatted = formatConfluenceDocument(text, numberChapters);
+				formatted = formatConfluenceDocument(text, numberChapters, outputChannel);
 			} catch (e) {
 				// Se der erro, retorna o texto original
 			}
@@ -408,13 +408,13 @@ export function activate(context: vscode.ExtensionContext) {
 
 				// Lê e formata o conteúdo local
 				const localContent = fs.readFileSync(uri.fsPath, 'utf-8');
-				const formattedLocal = formatConfluenceDocument(localContent, numberChapters);
+				const formattedLocal = formatConfluenceDocument(localContent, numberChapters, outputChannel);
 				const formattedLocalPath = path.join(temp, 'local_formatted_' + path.basename(uri.fsPath));
 				fs.writeFileSync(formattedLocalPath, formattedLocal, { encoding: 'utf-8' });
 
 				// Lê e formata o conteúdo publicado
 				const publishedContent = fs.readFileSync(publishedPath, 'utf-8');
-				const formattedPublished = formatConfluenceDocument(publishedContent, numberChapters);
+				const formattedPublished = formatConfluenceDocument(publishedContent, numberChapters, outputChannel);
 				const formattedPublishedPath = path.join(temp, 'published_formatted_' + path.basename(publishedPath));
 				fs.writeFileSync(formattedPublishedPath, formattedPublished, { encoding: 'utf-8' });
 
@@ -474,13 +474,13 @@ export function activate(context: vscode.ExtensionContext) {
 
 				// Lê e formata o conteúdo local
 				const localContent = fs.readFileSync(uri.fsPath, 'utf-8');
-				const formattedLocal = formatConfluenceDocument(localContent, numberChapters);
+				const formattedLocal = formatConfluenceDocument(localContent, numberChapters, outputChannel);
 				const formattedLocalPath = path.join(temp, 'local_formatted_' + path.basename(uri.fsPath));
 				fs.writeFileSync(formattedLocalPath, formattedLocal, { encoding: 'utf-8' });
 
 				// Lê e formata o conteúdo publicado
 				const publishedContent = fs.readFileSync(publishedPath, 'utf-8');
-				const formattedPublished = formatConfluenceDocument(publishedContent, numberChapters);
+				const formattedPublished = formatConfluenceDocument(publishedContent, numberChapters, outputChannel);
 				const formattedPublishedPath = path.join(temp, 'published_formatted_' + path.basename(publishedPath));
 				fs.writeFileSync(formattedPublishedPath, formattedPublished, { encoding: 'utf-8' });
 

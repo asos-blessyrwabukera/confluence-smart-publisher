@@ -2,6 +2,9 @@
 
 All notable changes to the "confluence-smart-publisher" extension will be documented in this file.
 
+## [0.0.4] - 2025-05-30
+- Refatoração da formatação do código, para deixar mais simples, mais eficiente, e melhor organizado
+
 ## [0.0.3] - 2025-05-29
 - Adicionado o comando "Decodificar entidades HTML" ao manifesto da extensão e ao menu de contexto para arquivos .confluence.
 - Retirada a opção de "Codificar entidades HTML" ao publicar, pois não é necessário e causa conflitos com o Confluence

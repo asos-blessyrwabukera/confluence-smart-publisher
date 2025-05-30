@@ -12,7 +12,9 @@ function formatHtmlLike(text: string): string {
   let result = '';
   let match;
 
-  // Lista de tokens para preservar tudo, mesmo malformado
+  // Rastreia a pilha de tags para saber quais tags estão atualmente abertas
+  const tagStack: { tagName: string, isInline: boolean }[] = [];
+
   const tokens: { type: 'tag' | 'text', value: string, tagName?: string, isClosing?: boolean, isSelfClosing?: boolean }[] = [];
   while ((match = tagRegex.exec(text)) !== null) {
     const token = match[0];
@@ -26,77 +28,178 @@ function formatHtmlLike(text: string): string {
     }
   }
 
-  let lastTokenWasClosingTag = false;
+  type LastTagType = 'none' | 'open-block' | 'open-inline' | 'close-inline' | 'close-block' | 'text';
+  let lastTagType: LastTagType = 'none';
   for (let i = 0; i < tokens.length; i++) {
     const tokenObj = tokens[i];
     if (tokenObj.type === 'tag') {
-      const { value: token, isClosing, isSelfClosing } = tokenObj;
-      if (!isClosing && !isSelfClosing && lastTokenWasClosingTag) {
-        result += '\n' + '  '.repeat(indent);
-      }
-      if (isClosing) {
-        indent = Math.max(indent - 1, 0);
-        result += '\n' + '  '.repeat(indent) + token.trim();
-        lastTokenWasClosingTag = true;
-        continue;
-      } else {
-        result += '\n' + '  '.repeat(indent) + token.trim();
+      const { value: token, isClosing, isSelfClosing, tagName } = tokenObj;
+      if (!tagName) {continue;}
+      
+      const tagType = TAG_BEHAVIOR[tagName] ? TAG_BEHAVIOR[tagName].type : 'block';
+      const isInline = tagType === 'inline';
+      const isBlock = tagType === 'block';
+      
+      // Verifica se estamos dentro de uma tag inline
+      const insideInlineTag = tagStack.length > 0 && tagStack[tagStack.length - 1].isInline;
+      
+      // TAG DE ABERTURA INLINE
+      if (!isClosing && !isSelfClosing && isInline) {
+        if (lastTagType === 'open-block' || lastTagType === 'close-inline' || lastTagType === 'close-block' || lastTagType === 'text' || lastTagType === 'none') {
+          // Sempre quebra linha, exceto se anterior era open-inline
+          result += '\n' + '  '.repeat(indent) + token.trim();
+        } else {
+          // anterior era open-inline: NÃO quebra linha
+          result += token.trim();
+        }
         if (!isSelfClosing) {
           indent++;
+          tagStack.push({ tagName, isInline: true });
         }
-        lastTokenWasClosingTag = false;
+        lastTagType = 'open-inline';
+        continue;
       }
+      
+      // TAG DE ABERTURA BLOCK
+      if (!isClosing && !isSelfClosing && isBlock) {
+        // Se a tag anterior for uma abertura de tag inline, não quebra linha
+        if (lastTagType === 'open-inline') {
+          result += token.trim();
+        } else {
+          // Caso contrário, adiciona quebra de linha normalmente
+          result += '\n' + '  '.repeat(indent) + token.trim();
+        }
+        
+        if (!isSelfClosing) {
+          indent++;
+          tagStack.push({ tagName, isInline: false });
+        }
+        lastTagType = 'open-block';
+        continue;
+      }
+      
+      // TAG DE FECHAMENTO
+      if (isClosing) {
+        indent = Math.max(indent - 1, 0);
+        // Remove a última tag da pilha
+        if (tagStack.length > 0) {tagStack.pop();}
+        
+        // Verifica se após remover a tag atual, ainda estamos dentro de uma tag inline
+        const stillInsideInlineTag = tagStack.length > 0 && tagStack[tagStack.length - 1].isInline;
+        
+        if (isInline) {
+          result += token.trim();
+          lastTagType = 'close-inline';
+        } else {
+          // Tags block de fechamento sempre devem ter quebra de linha
+          result += '\n' + '  '.repeat(indent) + token.trim();
+          lastTagType = 'close-block';
+        }
+        continue;
+      }
+      
+      // TAG SELF-CLOSING
+      if (isInline && insideInlineTag) {
+        result += token.trim();
+      } else {
+        result += '\n' + '  '.repeat(indent) + token.trim();
+      }
+      lastTagType = isInline ? 'close-inline' : 'close-block';
     } else {
       // Texto
       const textContent = tokenObj.value.replace(/\s+/g, ' ').trim();
       if (textContent) {
-        result += '\n' + '  '.repeat(indent) + textContent;
+        if (lastTagType === 'open-inline') {
+          result += textContent;
+        } else {
+          // Verifica se estamos dentro de uma tag inline para não adicionar quebra de linha
+          const insideInlineTag = tagStack.length > 0 && tagStack[tagStack.length - 1].isInline;
+          if (insideInlineTag) {
+            result += textContent;
+          } else {
+            result += '\n' + '  '.repeat(indent) + textContent;
+          }
+        }
+        lastTagType = 'text';
       }
-      lastTokenWasClosingTag = false;
     }
   }
-  // Remove quebras de linha duplicadas e espaços extras
   let processed = result
-    .replace(/^[ \t]*\n/, '') // remove quebra de linha inicial
-    .replace(/\n{3,}/g, '\n\n') // no máximo duas quebras consecutivas
-    .replace(/[ \t]+\n/g, '\n') // remove espaços antes de quebras de linha
-    .replace(/\n([ \t]*\n)+/g, '\n') // remove linhas em branco extras
+    .replace(/^[ \t]*\n/, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n([ \t]*\n)+/g, '\n')
     .trim() + '\n';
   return processed;
 }
 
-// Pós-processamento: mantém tags inline na mesma linha
+// Pós-processamento modificado para respeitar as tags block dentro de tags inline
 function keepInlineTagsOnSameLine(text: string): string {
-  // Gera regex para todas as tags inline
   const inlineTags = Object.entries(TAG_BEHAVIOR)
-    .filter(([_, v]) => v.inline)
+    .filter(([_, v]) => v.type === 'inline')
     .map(([tag]) => tag.replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1'));
+  
+  const blockTags = Object.entries(TAG_BEHAVIOR)
+    .filter(([_, v]) => v.type === 'block')
+    .map(([tag]) => tag.replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1'));
+  
   if (inlineTags.length === 0) {return text;}
-  // Regex para pegar <tag ...>...</tag> (não recursivo, só para inline simples)
+  
+  // Regex para pegar <tag ...>...conteudo...</tag> (permitindo espaços/quebras de linha entre as partes)
   const regex = new RegExp(
-    `<(${inlineTags.join('|')})([^>]*)>([\s\S]*?)<\/\\1>`,
+    `<(${inlineTags.join('|')})([^>]*)>\\s*(([\\s\\S]*?))\\s*<\\/\\1>`,
     'g'
   );
-  // Substitui para manter tudo na mesma linha
-  return text.replace(regex, (match, tag, attrs, content) => {
-    // Remove quebras de linha internas e espaços excessivos
-    const cleanContent = content.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-    return `<${tag}${attrs}>${cleanContent}</${tag}>`;
-  });
+  
+  // Função para verificar se o conteúdo contém uma tag block
+  const containsBlockTag = (content: string): boolean => {
+    if (blockTags.length === 0) {return false;}
+    const blockTagRegex = new RegExp(`<(${blockTags.join('|')})([^>]*)>`, 'i');
+    return blockTagRegex.test(content);
+  };
+  
+  let prev;
+  let curr = text;
+  let iterations = 0;
+  const maxIterations = 5; // Limita o número de iterações para evitar loops infinitos
+  
+  do {
+    prev = curr;
+    curr = curr.replace(regex, (match, tag, attrs, content) => {
+      // Se contém uma tag block, mantém a formatação original
+      if (containsBlockTag(content)) {
+        return match;
+      }
+      
+      // Caso contrário, limpa o conteúdo, preservando qualquer tag dentro dele
+      const cleanedContent = content
+        .replace(/\n\s+</g, '<')         // Remove quebras antes de tags de abertura
+        .replace(/>\s+\n/g, '>')         // Remove quebras após tags de fechamento
+        .replace(/>\s+\n\s+</g, '><')    // Remove quebras entre tags
+        .replace(/\s+/g, ' ');           // Normaliza espaços
+      
+      return `<${tag}${attrs}>${cleanedContent}</${tag}>`;
+    });
+    
+    iterations++;
+  } while (curr !== prev && iterations < maxIterations);
+  
+  return curr;
 }
 
-export function formatConfluenceDocument(text: string, numberChapters: boolean = false): string {
+export function formatConfluenceDocument(text: string, numberChapters: boolean = false, outputChannel?: vscode.OutputChannel): string {
   try {
     let processedText = text.trim();
     if (numberChapters) {
       processedText = numberHeadings(processedText);
     }
     let formatted = formatHtmlLike(processedText);
-    // Pós-formatação para tags inline
-    outputChannel
-    console.log('ANTES:', formatted);
+
+    // Pós-formatação para tags inline (remove espaços/quebras entre abertura, texto e fechamento)
     formatted = keepInlineTagsOnSameLine(formatted);
-    console.log('DEPOIS:', formatted);
+    
+    // Remove linhas em branco duplicadas
+    formatted = formatted.replace(/\n{3,}/g, '\n\n');
     return formatted;
   } catch (e) {
     vscode.window.showErrorMessage('Erro ao formatar o documento: ' + (e instanceof Error ? e.message : String(e)));
