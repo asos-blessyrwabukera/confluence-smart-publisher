@@ -1,148 +1,22 @@
 // Função utilitária para formatar documentos da linguagem Confluence
-// Pode ser expandida para incluir mais regras de formatação no futuro
+// Mantém apenas a numeração de headings e a formatação padrão HTML-like
 
-// Formatter unificado para Confluence Storage Format
-// Inclui tratamento especial para múltiplos roots e identação de tags estruturais
-
-import { allowedHierarchy, TAG_BEHAVIOR } from './confluenceSchema';
 import * as vscode from 'vscode';
-import { decode as decodeEntities, encode as encodeEntities, EntityLevel } from 'entities';
-
-// Funções auxiliares padronizadas
-function isBlockTag(tag: string) {
-  return !!TAG_BEHAVIOR[tag]?.block;
-}
-function isInlineTag(tag: string) {
-  return !!TAG_BEHAVIOR[tag]?.inline;
-}
-function isInlineTextTag(tag: string) {
-  return !!TAG_BEHAVIOR[tag]?.inlineText;
-}
-
-// Calcula as tags root a partir da hierarquia
-const allTags = Object.keys(allowedHierarchy);
-const childTags = new Set(Object.values(allowedHierarchy).flat());
-const ROOT_TAGS = allTags.filter(tag => !childTags.has(tag));
-
-function isRootTag(tag: string) {
-  // Uma tag é root se não aparece como filha de nenhuma outra na allowedHierarchy
-  return !Object.values(allowedHierarchy).flat().includes(tag);
-}
-
-function formatConfluenceStorage(xml: string): string {
-  // Divide múltiplos roots para garantir quebra de linha entre eles, considerando apenas tags root
-  const roots = [];
-  let buffer = '';
-  let depth = 0;
-  const tagRegex = /<([\w:-]+)([^>]*)>|<\/([\w:-]+)>/g;
-  let lastIndex = 0;
-  let match;
-  while ((match = tagRegex.exec(xml)) !== null) {
-    if (match[1]) { // tag de abertura
-      if (depth === 0 && buffer.trim()) {
-        // Só considera como root se a tag for root (usando nova definição)
-        const tagName = buffer.match(/^<([\w:-]+)/)?.[1];
-        if (tagName && isRootTag(tagName)) {
-          roots.push(buffer);
-          buffer = '';
-        }
-      }
-      depth++;
-    } else if (match[3]) { // tag de fechamento
-      depth--;
-    }
-    buffer += xml.slice(lastIndex, tagRegex.lastIndex);
-    lastIndex = tagRegex.lastIndex;
-    if (depth === 0 && buffer.trim()) {
-      const tagName = buffer.match(/^<([\w:-]+)/)?.[1];
-      if (tagName && isRootTag(tagName)) {
-        roots.push(buffer);
-        buffer = '';
-      }
-    }
-  }
-  if (buffer.trim()) {
-    const tagName = buffer.match(/^<([\w:-]+)/)?.[1];
-    if (tagName && isRootTag(tagName)) {
-      roots.push(buffer);
-    }
-  }
-
-  // Formata cada root separadamente
-  return roots.map(root => formatConfluenceStorageSingle(root.trim())).join('\n\n');
-}
-
-function formatConfluenceStorageSingle(xml: string): string {
-  const tagRegex = /<\/?([\w:-]+)([^>]*)>|([^<]+)/g;
-  let match;
-  let indent = 0;
-  let result = '';
-  let lastWasBlockClose = false;
-  let lastTagWasClose = false;
-  let lastIndent = 0;
-
-  while ((match = tagRegex.exec(xml)) !== null) {
-    if (match[1]) { // É uma tag
-      const tag = match[1];
-      const isClosing = match[0][1] === '/';
-      const isBlock = isBlockTag(tag);
-      if (isBlockTag(tag) && !isClosing) {
-        result += '\n' + '  '.repeat(indent);
-      }
-      if (isBlock) {
-        if (isClosing) { indent--; }
-        // Se a última tag foi fechamento e agora é abertura, ou se mudou a hierarquia, força quebra de linha
-        if ((lastTagWasClose && !isClosing) || (!isClosing && indent <= lastIndent)) {
-          result += '\n';
-        }
-        if (!lastWasBlockClose || isClosing) { result += '\n'; }
-        result += '  '.repeat(indent) + match[0].trim();
-        if (!isClosing) { lastIndent = indent; indent++; }
-        lastWasBlockClose = true;
-        lastTagWasClose = isClosing;
-      } else {
-        result += match[0];
-        lastWasBlockClose = false;
-        lastTagWasClose = isClosing;
-      }
-    } else if (match[3]) { // É texto
-      const text = match[3].replace(/\s+/g, ' ');
-      if (text.trim()) {
-        result += text;
-        lastWasBlockClose = false;
-        lastTagWasClose = false;
-      }
-    }
-  }
-  // Remove quebras de linha duplicadas e espaços extras
-  let processed = result
-    .replace(/^[ \t]*\n/, '') // remove quebra de linha inicial
-    .replace(/\n{3,}/g, '\n\n') // no máximo duas quebras consecutivas
-    .replace(/[ \t]+\n/g, '\n') // remove espaços antes de quebras de linha
-    .replace(/\n([ \t]*\n)+/g, '\n') // remove linhas em branco extras
-    .trim() + '\n';
-  return processed;
-}
+import { decode as decodeEntities, EntityLevel } from 'entities';
+import { TAG_BEHAVIOR } from './confluenceSchema';
 
 // Formatter baseado em HTML: identação simples de tags
 function formatHtmlLike(text: string): string {
-  // 1. Formatação padrão HTML-like
   const tagRegex = /<\/?[\w:-]+[^>]*>|[^<]+/g;
   let indent = 0;
   let result = '';
-  let lastWasText = false;
   let match;
 
-  // Pilha para múltiplos níveis de inlineText
-  type InlineTextBuffer = { tag: string, buffer: string };
-  const inlineTextStack: InlineTextBuffer[] = [];
-
-  // Novo: lista de tokens para preservar tudo, mesmo malformado
+  // Lista de tokens para preservar tudo, mesmo malformado
   const tokens: { type: 'tag' | 'text', value: string, tagName?: string, isClosing?: boolean, isSelfClosing?: boolean }[] = [];
   while ((match = tagRegex.exec(text)) !== null) {
     const token = match[0];
     if (token.startsWith('<')) {
-      // Tag de abertura, fechamento ou self-closing
       const isClosing = /^<\//.test(token);
       const isSelfClosing = /\/>$/.test(token) || /^<\w+[^>]*\/>$/.test(token);
       const tagName = token.match(/^<\/?(\w+[:\w-]*)/)?.[1];
@@ -156,68 +30,30 @@ function formatHtmlLike(text: string): string {
   for (let i = 0; i < tokens.length; i++) {
     const tokenObj = tokens[i];
     if (tokenObj.type === 'tag') {
-      const { value: token, tagName, isClosing, isSelfClosing } = tokenObj;
-      // Nova lógica: se o token anterior foi fechamento e agora é abertura, quebra de linha e mesma identação
+      const { value: token, isClosing, isSelfClosing } = tokenObj;
       if (!isClosing && !isSelfClosing && lastTokenWasClosingTag) {
         result += '\n' + '  '.repeat(indent);
       }
-      if (isClosing && tagName && inlineTextStack.length > 0 && tagName === inlineTextStack[inlineTextStack.length - 1].tag) {
-        // Fecha o nível atual de inlineText
-        inlineTextStack[inlineTextStack.length - 1].buffer += token.trim();
-        const closedBuffer = inlineTextStack.pop()!.buffer;
-        if (inlineTextStack.length > 0) {
-          // Adiciona ao buffer do nível anterior
-          inlineTextStack[inlineTextStack.length - 1].buffer += closedBuffer;
-        } else {
-          result += '\n' + '  '.repeat(indent - 1) + closedBuffer;
-        }
-        indent = Math.max(indent - 1, 0);
-        lastWasText = false;
-        lastTokenWasClosingTag = true;
-        continue;
-      }
       if (isClosing) {
-        if (inlineTextStack.length > 0) {
-          result += '\n' + '  '.repeat(indent) + inlineTextStack.pop()!.buffer;
-        }
         indent = Math.max(indent - 1, 0);
         result += '\n' + '  '.repeat(indent) + token.trim();
-        lastWasText = false;
         lastTokenWasClosingTag = true;
         continue;
-      } else if (tagName && isInlineTextTag(tagName) && !isSelfClosing) {
-        inlineTextStack.push({ tag: tagName, buffer: token.trim() });
-        indent++;
-        lastTokenWasClosingTag = false;
-        continue;
       } else {
-        if (inlineTextStack.length > 0) {
-          result += '\n' + '  '.repeat(indent) + inlineTextStack.pop()!.buffer;
-        }
         result += '\n' + '  '.repeat(indent) + token.trim();
         if (!isSelfClosing) {
           indent++;
         }
-        lastWasText = false;
         lastTokenWasClosingTag = false;
       }
     } else {
       // Texto
       const textContent = tokenObj.value.replace(/\s+/g, ' ').trim();
       if (textContent) {
-        if (inlineTextStack.length > 0) {
-          inlineTextStack[inlineTextStack.length - 1].buffer += textContent;
-        } else {
-          result += '\n' + '  '.repeat(indent) + textContent;
-        }
-        lastWasText = true;
-        lastTokenWasClosingTag = false;
+        result += '\n' + '  '.repeat(indent) + textContent;
       }
+      lastTokenWasClosingTag = false;
     }
-  }
-  // Ao final, se houver buffers abertos, despeja todos
-  while (inlineTextStack.length > 0) {
-    result += '\n' + '  '.repeat(indent) + inlineTextStack.pop()!.buffer;
   }
   // Remove quebras de linha duplicadas e espaços extras
   let processed = result
@@ -229,6 +65,26 @@ function formatHtmlLike(text: string): string {
   return processed;
 }
 
+// Pós-processamento: mantém tags inline na mesma linha
+function keepInlineTagsOnSameLine(text: string): string {
+  // Gera regex para todas as tags inline
+  const inlineTags = Object.entries(TAG_BEHAVIOR)
+    .filter(([_, v]) => v.inline)
+    .map(([tag]) => tag.replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1'));
+  if (inlineTags.length === 0) {return text;}
+  // Regex para pegar <tag ...>...</tag> (não recursivo, só para inline simples)
+  const regex = new RegExp(
+    `<(${inlineTags.join('|')})([^>]*)>([\s\S]*?)<\/\\1>`,
+    'g'
+  );
+  // Substitui para manter tudo na mesma linha
+  return text.replace(regex, (match, tag, attrs, content) => {
+    // Remove quebras de linha internas e espaços excessivos
+    const cleanContent = content.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+    return `<${tag}${attrs}>${cleanContent}</${tag}>`;
+  });
+}
+
 export function formatConfluenceDocument(text: string, numberChapters: boolean = false): string {
   try {
     let processedText = text.trim();
@@ -236,7 +92,11 @@ export function formatConfluenceDocument(text: string, numberChapters: boolean =
       processedText = numberHeadings(processedText);
     }
     let formatted = formatHtmlLike(processedText);
-    // Não aplica mais destaque em tags não fechadas ou não abertas
+    // Pós-formatação para tags inline
+    outputChannel
+    console.log('ANTES:', formatted);
+    formatted = keepInlineTagsOnSameLine(formatted);
+    console.log('DEPOIS:', formatted);
     return formatted;
   } catch (e) {
     vscode.window.showErrorMessage('Erro ao formatar o documento: ' + (e instanceof Error ? e.message : String(e)));
@@ -268,11 +128,9 @@ function cleanHeadingContent(content: string): string {
 
 // Decodifica entidades HTML apenas nos textos entre as tags, preservando tags e atributos
 export function decodeHtmlEntities(text: string): string {
-  // Expressão regular para separar tags e textos
-  // Usar { level: EntityLevel.HTML } para garantir decodificação de todas entidades HTML (ex: &ccedil;, &eacute;)
   return text.replace(/(<[^>]+>)|([^<]+)/g, (match, tag, txt) => {
-    if (tag) {return tag;} // Mantém a tag intacta
-    if (txt) {return decodeEntities(txt, { level: EntityLevel.HTML });} // Decodifica todas entidades HTML
+    if (tag) {return tag;}
+    if (txt) {return decodeEntities(txt, { level: EntityLevel.HTML });}
     return match;
   });
 } 
