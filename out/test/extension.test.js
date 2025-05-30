@@ -38,6 +38,8 @@ const assert = __importStar(require("assert"));
 // as well as import your extension to test it
 const vscode = __importStar(require("vscode"));
 // import * as myExtension from '../../extension';
+// Importar para executar os testes do formatter
+require("./formatterTest");
 suite('Extension Test Suite', () => {
     vscode.window.showInformationMessage('Start all tests.');
     test('Sample test', () => {
