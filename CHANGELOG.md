@@ -2,6 +2,10 @@
 
 All notable changes to the "confluence-smart-publisher" extension will be documented in this file.
 
+## [1.0] - 2025-06-02
+- Aplicado a interncionalização da maio parte das strings
+- Readme traduzido para o inglês
+
 ## [0.0.4] - 2025-05-30
 - Refatoração da formatação do código, para deixar mais simples, mais eficiente, e melhor organizado
 
@@ -14,4 +18,4 @@ All notable changes to the "confluence-smart-publisher" extension will be docume
 - Suporte ao modo HtmlEntities: conversão automática de caracteres especiais para entidades HTML ao publicar ou baixar páginas.
 
 ## [0.0.1] - 2025-05-27
-- Primeira versão pública: publicação, download, formatação, diff e sincronização de páginas do Confluence.
+- Primeira versão: publicação, download, formatação, diff e sincronização de páginas do Confluence.

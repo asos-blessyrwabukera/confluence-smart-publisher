@@ -2,7 +2,7 @@
   "name": "confluence-smart-publisher",
   "displayName": "Confluence-Smart-Publisher",
   "description": "Easily publish pages to Confluence directly from your VSCode",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "icon": "images/csp-icon.png",
   "engines": {
     "vscode": "^1.96.0"
@@ -133,16 +133,10 @@
         }
       }
     },
-    "l10n": [
-      {
-        "id": "pt-br",
-        "path": "./i18n/pt-br.json"
-      },
-      {
-        "id": "en",
-        "path": "./i18n/en.json"
-      }
-    ],
+    "l10n": {
+      "pt-br": "./i18n/pt-br.json",
+      "en": "./i18n/en.json"
+    },
     "languages": [
       {
         "id": "confluence",
@@ -188,11 +182,8 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/form-data": "^2.2.1",
-    "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@types/node-fetch": "^2.6.12",
-    "@types/vscode": "^1.100.0",
+    "@types/vscode": "^1.96.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "@vscode/test-cli": "^0.0.10",
@@ -204,7 +195,6 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0",
-    "dotenv": "^16.5.0",
     "entities": "^6.0.0",
     "fast-xml-parser": "^5.2.3",
     "form-data": "^4.0.2",
@@ -212,5 +202,9 @@
     "xml-escape": "^1.1.0"
   },
   "publisher": "AntonioCarelli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/antoniocarelli/confluence-smart-publisher"
+  },
   "activationEvents": []
 }
