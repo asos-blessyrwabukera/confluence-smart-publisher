@@ -1,7 +1,7 @@
 {
   "name": "confluence-smart-publisher",
   "displayName": "Confluence-Smart-Publisher",
-  "description": "Publique facilmente páginas no Confluence diretamente do seu VSCode",
+  "description": "Easily publish pages to Confluence directly from your VSCode",
   "version": "0.0.4",
   "icon": "images/csp-icon.png",
   "engines": {
@@ -15,39 +15,39 @@
     "commands": [
       {
         "command": "confluence-smart-publisher.publishConfluence",
-        "title": "Publicar Documento"
+        "title": "%confluence.commands.publish%"
       },
       {
         "command": "confluence-smart-publisher.getPageByTitle",
-        "title": "Baixar Documento por Título"
+        "title": "%confluence.commands.getByTitle%"
       },
       {
         "command": "confluence-smart-publisher.getPageById",
-        "title": "Baixar Documento por ID"
+        "title": "%confluence.commands.getById%"
       },
       {
         "command": "confluence-smart-publisher.createPage",
-        "title": "Criar Documento"
+        "title": "%confluence.commands.createPage%"
       },
       {
         "command": "confluence-smart-publisher.formatConfluence",
-        "title": "Formatar Documento"
+        "title": "%confluence.commands.formatDoc%"
       },
       {
         "command": "confluence-smart-publisher.diffWithPublished",
-        "title": "Comparar Documento Local com o Publicado"
+        "title": "%confluence.commands.diffWithPublished%"
       },
       {
         "command": "confluence-smart-publisher.syncWithPublished",
-        "title": "Sincronizar com Publicado no Confluence"
+        "title": "%confluence.commands.syncWithPublished%"
       },
       {
         "command": "confluence-smart-publisher.setEmojiTitle",
-        "title": "Definir emoji do título"
+        "title": "%confluence.commands.setEmojiTitle%"
       },
       {
         "command": "confluence-smart-publisher.decodeHtml",
-        "title": "Decodificar entidades HTML"
+        "title": "%confluence.commands.decodeHtml%"
       }
     ],
     "submenus": [
@@ -109,30 +109,40 @@
         "confluenceSmartPublisher.baseUrl": {
           "type": "string",
           "default": "",
-          "description": "URL base da sua instância Confluence (ex: https://empresa.atlassian.net/wiki)"
+          "description": "%confluence.config.baseUrl%"
         },
         "confluenceSmartPublisher.username": {
           "type": "string",
           "default": "",
-          "description": "Usuário do Confluence (normalmente o e-mail)"
+          "description": "%confluence.config.username%"
         },
         "confluenceSmartPublisher.apiToken": {
           "type": "string",
           "default": "",
-          "description": "API Token do Confluence (gere em https://id.atlassian.com/manage-profile/security/api-tokens)"
+          "description": "%confluence.config.apiToken%"
         },
         "confluenceSmartPublisher.format.numberChapters": {
           "type": "boolean",
           "default": true,
-          "description": "Numera automaticamente os capítulos ao formatar o documento .confluence"
+          "description": "%confluence.config.format.numberChapters%"
         },
         "confluenceSmartPublisher.htmlEntitiesDecode": {
           "type": "boolean",
           "default": false,
-          "description": "Decodificar entidades HTML ao baixar arquivos Confluence."
+          "description": "%confluence.config.htmlEntitiesDecode%"
         }
       }
     },
+    "l10n": [
+      {
+        "id": "pt-br",
+        "path": "./i18n/pt-br.json"
+      },
+      {
+        "id": "en",
+        "path": "./i18n/en.json"
+      }
+    ],
     "languages": [
       {
         "id": "confluence",

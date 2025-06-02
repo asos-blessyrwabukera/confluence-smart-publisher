@@ -1,0 +1,12 @@
+# Configuração de line endings
+* text=auto eol=lf
+
+# Arquivos específicos do Windows
+*.{cmd,[cC][mM][dD]} text eol=crlf
+*.{bat,[bB][aA][tT]} text eol=crlf
+*.{ps1,[pP][sS]1} text eol=crlf
+
+# Arquivos de configuração específicos
+i18n/*.json text eol=lf
+.cursor/**/*.mdc text eol=lf
+*.mdc text eol=lf 

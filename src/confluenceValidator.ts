@@ -24,7 +24,7 @@ export function getUnclosedOrUnopenedTagDiagnostics(text: string): vscode.Diagno
             textToPosition(text, match.index),
             textToPosition(text, match.index + full.length)
           ),
-          `Tag de fechamento </${tag}> sem abertura correspondente`,
+          `Closing tag </${tag}> without corresponding opening tag`,
           vscode.DiagnosticSeverity.Warning
         ));
       } else {
@@ -42,7 +42,7 @@ export function getUnclosedOrUnopenedTagDiagnostics(text: string): vscode.Diagno
         textToPosition(text, open.index),
         textToPosition(text, open.index + length)
       ),
-      `Tag de abertura <${open.tag}> sem fechamento correspondente`,
+      `Opening tag <${open.tag}> without corresponding closing tag`,
       vscode.DiagnosticSeverity.Warning
     ));
   }
@@ -96,7 +96,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
         // Não foi aberta antes
         diagnostics.push(new vscode.Diagnostic(
           new vscode.Range(pos.line, pos.char, pos.line, pos.char + full.length),
-          `Tag de fechamento </${tag}> sem correspondente de abertura`,
+          `Closing tag </${tag}> without corresponding opening tag`,
           vscode.DiagnosticSeverity.Error
         ));
       } else {
@@ -109,7 +109,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
   for (const open of openTags) {
     diagnostics.push(new vscode.Diagnostic(
       new vscode.Range(open.line, open.char, open.line, open.char + open.tag.length + 2),
-      `Tag de abertura <${open.tag}> sem correspondente de fechamento`,
+      `Opening tag <${open.tag}> without corresponding closing tag`,
       vscode.DiagnosticSeverity.Error
     ));
   }
@@ -121,7 +121,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
   } catch (e: any) {
     diagnostics.push(new vscode.Diagnostic(
       new vscode.Range(0, 0, 0, 1),
-      'Erro ao analisar HTML: ' + e.message,
+      'Error parsing HTML: ' + e.message,
       vscode.DiagnosticSeverity.Error
     ));
     return diagnostics;
@@ -140,7 +140,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
       if (!(tag in allowedTags)) {
         diagnostics.push(new vscode.Diagnostic(
           new vscode.Range(pos.line, pos.char, pos.line, pos.char + tag.length + 2),
-          `Tag não permitida: <${tag}>`,
+          `Not allowed tag: <${tag}>`,
           vscode.DiagnosticSeverity.Error
         ));
       } else {
@@ -149,7 +149,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
           if (!$(el).attr(attr)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(pos.line, pos.char, pos.line, pos.char + tag.length + 2),
-              `Atributo obrigatório '${attr}' ausente em <${tag}>`,
+              `Required attribute '${attr}' missing in <${tag}>`,
               vscode.DiagnosticSeverity.Error
             ));
           }
@@ -160,7 +160,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
           if (parent && !allowedHierarchy[tag].includes(parent.tagName)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(pos.line, pos.char, pos.line, pos.char + tag.length + 2),
-              `<${tag}> deve estar dentro de ${allowedHierarchy[tag].map((p: string) => `<${p}>`).join(' ou ')}`,
+              `<${tag}> must be inside ${allowedHierarchy[tag].map((p: string) => `<${p}>`).join(' or ')}`,
               vscode.DiagnosticSeverity.Error
             ));
           }
@@ -181,7 +181,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
   if (csp.length === 0) {
     diagnostics.push(new vscode.Diagnostic(
       new vscode.Range(0, 0, 0, 1),
-      'Tag <csp:parameters> obrigatória no documento.',
+      'Required tag <csp:parameters> in document.',
       vscode.DiagnosticSeverity.Error
     ));
   } else {
@@ -189,35 +189,35 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
     if (!$(cspEl).attr('xmlns:csp')) {
       diagnostics.push(new vscode.Diagnostic(
         new vscode.Range(0, 0, 0, 1),
-        'Atributo xmlns:csp obrigatório em <csp:parameters>. Exemplo: <csp:parameters xmlns:csp="https://confluence.smart.publisher/csp">',
+        'Required attribute xmlns:csp in <csp:parameters>. Example: <csp:parameters xmlns:csp="https://confluence.smart.publisher/csp">',
         vscode.DiagnosticSeverity.Error
       ));
     }
     if ($(cspEl).find('csp:file_id').length === 0) {
       diagnostics.push(new vscode.Diagnostic(
         new vscode.Range(0, 0, 0, 1),
-        'Tag <csp:file_id> obrigatória dentro de <csp:parameters>.',
+        'Required tag <csp:file_id> inside <csp:parameters>.',
         vscode.DiagnosticSeverity.Error
       ));
     }
     if ($(cspEl).find('csp:labels_list').length === 0) {
       diagnostics.push(new vscode.Diagnostic(
         new vscode.Range(0, 0, 0, 1),
-        'Tag <csp:labels_list> obrigatória dentro de <csp:parameters>.',
+        'Required tag <csp:labels_list> inside <csp:parameters>.',
         vscode.DiagnosticSeverity.Error
       ));
     }
     if ($(cspEl).find('csp:parent_id').length === 0) {
       diagnostics.push(new vscode.Diagnostic(
         new vscode.Range(0, 0, 0, 1),
-        'Tag <csp:parent_id> obrigatória dentro de <csp:parameters>.',
+        'Required tag <csp:parent_id> inside <csp:parameters>.',
         vscode.DiagnosticSeverity.Error
       ));
     }
     if ($(cspEl).find('csp:properties').length === 0) {
       diagnostics.push(new vscode.Diagnostic(
         new vscode.Range(0, 0, 0, 1),
-        'Tag <csp:properties> obrigatória dentro de <csp:parameters>.',
+        'Required tag <csp:properties> inside <csp:parameters>.',
         vscode.DiagnosticSeverity.Error
       ));
     } else {
@@ -228,7 +228,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
         if (keys.length !== values.length) {
           diagnostics.push(new vscode.Diagnostic(
             new vscode.Range(0, 0, 0, 1),
-            'A quantidade de <csp:key> e <csp:value> em <csp:properties> deve ser igual.',
+            'The number of <csp:key> and <csp:value> in <csp:properties> must be equal.',
             vscode.DiagnosticSeverity.Error
           ));
         }
@@ -243,14 +243,14 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
       if (!$(layoutEl).attr('version')) {
         diagnostics.push(new vscode.Diagnostic(
           new vscode.Range(0, 0, 0, 1),
-          '<ac:layout> deve conter o atributo obrigatório \'version\'.',
+          '<ac:layout> must contain the required attribute \'version\'.',
           vscode.DiagnosticSeverity.Error
         ));
       }
       if (!$(layoutEl).attr('type')) {
         diagnostics.push(new vscode.Diagnostic(
           new vscode.Range(0, 0, 0, 1),
-          '<ac:layout> deve conter o atributo obrigatório \'type\'.',
+          '<ac:layout> must contain the required attribute \'type\'.',
           vscode.DiagnosticSeverity.Error
         ));
       }
@@ -258,7 +258,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
       if (sections.length === 0) {
         diagnostics.push(new vscode.Diagnostic(
           new vscode.Range(0, 0, 0, 1),
-          '<ac:layout> deve conter pelo menos um <ac:layout-section> como filho.',
+          '<ac:layout> must contain at least one <ac:layout-section> as a child.',
           vscode.DiagnosticSeverity.Error
         ));
       } else {
@@ -266,7 +266,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
           if (!$(sectionEl).attr('type')) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(0, 0, 0, 1),
-              `<ac:layout-section> (posição ${idx + 1}) deve conter o atributo obrigatório 'type'.`,
+              `<ac:layout-section> (position ${idx + 1}) must contain the required attribute 'type'.`,
               vscode.DiagnosticSeverity.Error
             ));
           }
@@ -274,7 +274,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
           if (cells.length === 0) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(0, 0, 0, 1),
-              `<ac:layout-section> (posição ${idx + 1}) deve conter pelo menos um <ac:layout-cell> como filho.`,
+              `<ac:layout-section> (position ${idx + 1}) must contain at least one <ac:layout-cell> as a child.`,
               vscode.DiagnosticSeverity.Error
             ));
           } else {
@@ -282,14 +282,14 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
               if (!$(cellEl).attr('id')) {
                 diagnostics.push(new vscode.Diagnostic(
                   new vscode.Range(0, 0, 0, 1),
-                  `<ac:layout-cell> (posição ${cidx + 1} da seção ${idx + 1}) deve conter o atributo obrigatório 'id'.`,
+                  `<ac:layout-cell> (position ${cidx + 1} of section ${idx + 1}) must contain the required attribute 'id'.`,
                   vscode.DiagnosticSeverity.Error
                 ));
               }
               if (!$(cellEl).attr('style')) {
                 diagnostics.push(new vscode.Diagnostic(
                   new vscode.Range(0, 0, 0, 1),
-                  `<ac:layout-cell> (posição ${cidx + 1} da seção ${idx + 1}) deve conter o atributo obrigatório 'style'.`,
+                  `<ac:layout-cell> (position ${cidx + 1} of section ${idx + 1}) must contain the required attribute 'style'.`,
                   vscode.DiagnosticSeverity.Error
                 ));
               }

@@ -28,7 +28,7 @@ export class ConfluenceClient {
         this.username = config.get('username') as string || '';
         this.apiToken = config.get('apiToken') as string || '';
         if (!this.baseUrl || !this.username || !this.apiToken) {
-            throw new Error('Configure baseUrl, username e apiToken nas configurações da extensão.');
+            throw new Error(vscode.l10n.t('confluence.error.configuration'));
         }
     }
 
@@ -55,10 +55,10 @@ export class ConfluenceClient {
         return await resp.json() as any;
     }
 
-    async downloadConfluencePage(pageId: string, bodyFormat: BodyFormat = BodyFormat.STORAGE, outputDir: string = 'Baixados'): Promise<string> {
+    async downloadConfluencePage(pageId: string, bodyFormat: BodyFormat = BodyFormat.STORAGE, outputDir: string = 'Downloaded'): Promise<string> {
         const { default: fetch } = await import('node-fetch');
         const page = await this.getPageById(pageId, bodyFormat);
-        if (!page) {throw new Error(`Página com ID ${pageId} não encontrada.`);}
+        if (!page) {throw new Error(`Page with ID ${pageId} not found.`);}
         const formato = bodyFormat;
         let conteudo: string;
         try {
@@ -69,7 +69,7 @@ export class ConfluenceClient {
                 conteudo = decodeHtmlEntities(conteudo);
             }
         } catch {
-            throw new Error(`Conteúdo body.${formato}.value não encontrado na resposta da API.`);
+            throw new Error(`Content body.${formato}.value not found in API response.`);
         }
         const titulo = page.title || `${formato}_${pageId}`;
         const tituloSanitizado = titulo.replace(/[\\/:*?"<>|]/g, '_');
@@ -273,34 +273,32 @@ export class ConfluenceClient {
     }
 
     // Funções auxiliares para extração de tags, listas e propriedades do conteúdo
-    private extrairTag(tag: string, conteudo: string): string | null {
-        // Permite espaços e quebras de linha entre as tags e o valor
-        const match = conteudo.match(new RegExp(`<${tag}>[\s\n\r]*([\s\S]*?)[\s\n\r]*<\/${tag}>`, 'i'));
-        return match ? match[1].trim() : null;
+    private extractTag(tag: string, content: string): string | null {
+        const regex = new RegExp(`<${tag}[^>]*>(.*?)</${tag}>`, 's');
+        const match = content.match(regex);
+        return match ? match[1] : null;
     }
-    private extrairLista(tag: string, conteudo: string): string[] {
-        const valor = this.extrairTag(tag, conteudo);
-        if (!valor) {return [];} 
-        return valor.split(',').map(s => s.trim()).filter(Boolean);
+
+    private extractList(tag: string, content: string): string[] {
+        const value = this.extractTag(tag, content);
+        return value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
     }
-    private extrairPropriedades(conteudo: string): { key: string, value: string }[] {
+
+    private extractProperties(content: string): { key: string, value: string }[] {
         const props: { key: string, value: string }[] = [];
-        const propsBlock = conteudo.match(/<csp:properties>[\s\S]*?<\/csp:properties>/);
-        if (!propsBlock) {return props;}
-        const block = propsBlock[0];
-        const keyRegex = /<csp:key>([\s\S]*?)<\/csp:key>/g;
-        const valueRegex = /<csp:value>([\s\S]*?)<\/csp:value>/g;
-        let keyMatch, valueMatch;
-        const keys: string[] = [];
-        const values: string[] = [];
-        while ((keyMatch = keyRegex.exec(block)) !== null) {
-            keys.push(keyMatch[1]);
-        }
-        while ((valueMatch = valueRegex.exec(block)) !== null) {
-            values.push(valueMatch[1]);
-        }
-        for (let i = 0; i < Math.max(keys.length, values.length); i++) {
-            props.push({ key: keys[i] || '', value: values[i] || '' });
+        const regex = /<csp:properties>([\s\S]*?)<\/csp:properties>/g;
+        const match = regex.exec(content);
+        if (!match) {return props;}
+
+        const propContent = match[1];
+        const keyRegex = /<csp:key>(.*?)<\/csp:key>\s*<csp:value>(.*?)<\/csp:value>/g;
+        let keyMatch;
+        while ((keyMatch = keyRegex.exec(propContent)) !== null) {
+            const key = keyMatch[1].trim();
+            const value = keyMatch[2].trim();
+            if (key) {
+                props.push({ key, value });
+            }
         }
         return props;
     }
@@ -314,17 +312,17 @@ export class ConfluenceClient {
         content = content.replace(/\n +/g, '\n');
 
         // Extrair informações
-        const parentId = this.extrairTag('csp:parent_id', content);
+        const parentId = this.extractTag('csp:parent_id', content);
         if (!parentId || !/^[0-9]+$/.test(parentId)) {
-            throw new Error(`parentId inválido ou ausente na tag <csp:parent_id>: ${parentId}`);
+            throw new Error(`Invalid or missing parentId in <csp:parent_id> tag: ${parentId}`);
         }
-        const labelsList = this.extrairLista('csp:labels_list', content);
-        const propriedades = this.extrairPropriedades(content);
+        const labelsList = this.extractList('csp:labels_list', content);
+        const properties = this.extractProperties(content);
 
         // Obter spaceId a partir do parentId
         const parentPage = await this.getPageById(parentId);
         if (!parentPage || !parentPage.spaceId) {
-            throw new Error(`Não foi possível obter spaceId para parentId ${parentId}`);
+            throw new Error(`Could not get spaceId for parentId ${parentId}`);
         }
         const spaceId = parentPage.spaceId;
 
@@ -387,7 +385,7 @@ export class ConfluenceClient {
                 if (!updateResp.ok) {throw new Error(await updateResp.text());}
             }
             // Remove todas as labels e propriedades antes de adicionar as do arquivo
-            await this.applyLabelsAndPropertiesFromFile(pageId, labelsList, propriedades);
+            await this.applyLabelsAndPropertiesFromFile(pageId, labelsList, properties);
         }
         return pageData;
     }
@@ -398,21 +396,21 @@ export class ConfluenceClient {
 
         content = content.replace(/\n +/g, '\n');
         const match = content.match(/<csp:file_id>(.*?)<\/csp:file_id>/);
-        if (!match) {throw new Error('Tag <csp:file_id> não encontrada no arquivo.');}
+        if (!match) {throw new Error('Tag <csp:file_id> not found in file.');}
         const pageId = match[1].trim();
-        if (!/^\d+$/.test(pageId)) {throw new Error(`ID da página inválido na tag <csp:file_id>: ${pageId}`);}
+        if (!/^\d+$/.test(pageId)) {throw new Error(`Invalid page ID in <csp:file_id> tag: ${pageId}`);}
         let contentToSend = content.replace(/<csp:parameters[\s\S]*?<\/csp:parameters>\s*/g, '');
 
         const pasta = path.dirname(filePath);
         contentToSend = await this._processImagesInContent(contentToSend, pageId, pasta);
         const page = await this.getPageById(pageId);
-        if (!page) {throw new Error(`Página com ID ${pageId} não encontrada.`);}
+        if (!page) {throw new Error(`Page with ID ${pageId} not found.`);}
         const spaceId = page.spaceId;
-        if (!spaceId) {throw new Error(`spaceId não encontrado para a página ${pageId}`);}
+        if (!spaceId) {throw new Error(`spaceId not found for page ${pageId}`);}
         const title = page.title;
         const version = page.version?.number || 1;
-        const labelsList = this.extrairLista('csp:labels_list', content);
-        const propriedades = this.extrairPropriedades(content);
+        const labelsList = this.extractList('csp:labels_list', content);
+        const properties = this.extractProperties(content);
         const payload = {
             id: pageId,
             status: 'current',
@@ -434,14 +432,14 @@ export class ConfluenceClient {
         });
         if (!resp.ok) {throw new Error(await resp.text());}
         // Remove todas as labels e propriedades antes de adicionar as do arquivo
-        await this.applyLabelsAndPropertiesFromFile(pageId, labelsList, propriedades);
+        await this.applyLabelsAndPropertiesFromFile(pageId, labelsList, properties);
         return await resp.json();
     }
 
     async setPageLabels(pageId: string, labels: string[]): Promise<any> {
         const { default: fetch } = await import('node-fetch');
         if (!Array.isArray(labels) || !labels.every(l => typeof l === 'string')) {
-            throw new Error('labels deve ser uma lista de strings');
+            throw new Error('labels must be a list of strings');
         }
         const payload = labels.map(label => ({ prefix: 'global', name: label }));
         let baseUrlV1 = this.baseUrl.includes('/api/v2') ? this.baseUrl.split('/api/v2')[0] : this.baseUrl;
@@ -493,21 +491,22 @@ export class ConfluenceClient {
 
 export async function publishConfluenceFile(filePath: string) {
     const fsPromises = fs.promises;
-    function extrairFileId(conteudo: string): string | null {
-        const match = conteudo.match(/<csp:file_id>(.*?)<\/csp:file_id>/);
-        return match ? match[1].trim() : null;
+    function extractFileId(conteudo: string): string | null {
+        const regex = /<csp:file_id>(\d+)<\/csp:file_id>/;
+        const match = conteudo.match(regex);
+        return match ? match[1] : null;
     }
-    async function inserirFileIdNoArquivo(filePath: string, fileId: string) {
+    async function insertFileIdInFile(filePath: string, fileId: string) {
         let conteudo = await fsPromises.readFile(filePath, 'utf-8');
         conteudo = conteudo.replace(/<csp:file_id>.*?<\/csp:file_id>\s*/s, '');
         conteudo = `<csp:file_id>${fileId}</csp:file_id>\n` + conteudo;
         await fsPromises.writeFile(filePath, conteudo, { encoding: 'utf-8' });
     }
     if (!fs.existsSync(filePath)) {
-        throw new Error(`Arquivo não encontrado: ${filePath}`);
+        throw new Error(`File not found: ${filePath}`);
     }
     let conteudo = await fsPromises.readFile(filePath, 'utf-8');
-    const fileId = extrairFileId(conteudo);
+    const fileId = extractFileId(conteudo);
     const client = new ConfluenceClient();
     let pageId: string;
     let resposta: any;
@@ -517,8 +516,8 @@ export async function publishConfluenceFile(filePath: string) {
     } else {
         resposta = await client.createPageFromFile(filePath);
         pageId = resposta.id;
-        if (!pageId) {throw new Error('Não foi possível obter o ID da página criada.');}
-        await inserirFileIdNoArquivo(filePath, pageId);
+        if (!pageId) {throw new Error('Could not get the ID of the created page.');}
+        await insertFileIdInFile(filePath, pageId);
     }
     // Adiciona labels obrigatórias
     const labels = ['user-story', 'escopo', 'pendente'];

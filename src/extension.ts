@@ -6,18 +6,22 @@ import { ConfluenceClient, BodyFormat } from './confluenceClient';
 import path from 'path';
 import { formatConfluenceDocument } from './confluenceFormatter';
 import { getUnclosedOrUnopenedTagDiagnostics, getConfluenceDiagnostics } from './confluenceValidator';
-import { allowedTags, allowedValues, allowedHierarchy } from './confluenceSchema';
+import { allowedTags, allowedValues } from './confluenceSchema';
+import { setupLocalization } from './i18n';
 
 let outputChannel: vscode.OutputChannel;
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-	outputChannel = vscode.window.createOutputChannel('Confluence Smart Publisher');
+	// Inicializar localização
+	setupLocalization();
+	
+	outputChannel = vscode.window.createOutputChannel(vscode.l10n.t('confluence.outputChannel.name'));
 	context.subscriptions.push(outputChannel);
-	outputChannel.appendLine('Confluence Smart Publisher ativado!');
+	outputChannel.appendLine(vscode.l10n.t('confluence.log.activated'));
 
-	// Diagnóstico automático de tags não fechadas/abertas
+	// Automatic diagnostics for unclosed/unopened tags
 	const diagnostics = vscode.languages.createDiagnosticCollection('confluence');
 	context.subscriptions.push(diagnostics);
 
@@ -29,21 +33,21 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	// Atualiza diagnósticos ao abrir
+	// Update diagnostics when opening
 	context.subscriptions.push(
 		vscode.workspace.onDidOpenTextDocument(updateDiagnostics)
 	);
-	// Atualiza diagnósticos ao trocar de editor ativo
+	// Update diagnostics when changing active editor
 	context.subscriptions.push(
 		vscode.window.onDidChangeActiveTextEditor(editor => {
 			if (editor) {updateDiagnostics(editor.document);}
 		})
 	);
-	// Atualiza diagnósticos ao salvar
+	// Update diagnostics when saving
 	context.subscriptions.push(
 		vscode.workspace.onDidSaveTextDocument(updateDiagnostics)
 	);
-	// Atualiza diagnósticos ao editar o documento (enquanto digita)
+	// Update diagnostics when editing document (while typing)
 	context.subscriptions.push(
 		vscode.workspace.onDidChangeTextDocument(event => {
 			if (event.document.languageId === 'xml' || event.document.fileName.endsWith('.confluence')) {
@@ -53,7 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	// Remove diagnósticos ao excluir arquivos
+	// Remove diagnostics when deleting files
 	context.subscriptions.push(
 		vscode.workspace.onDidDeleteFiles(event => {
 			for (const file of event.files) {
@@ -62,164 +66,164 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	// Use o outputChannel para logs da extensão
-	outputChannel.appendLine('Congratulations, your extension "confluence-smart-publisher" is now active!');
+	// Use outputChannel for extension logs
+	outputChannel.appendLine(vscode.l10n.t('confluence.log.welcome'));
 
-	// Comando para publicar arquivo .confluence
+	// Command to publish .confluence file
 	const publishCmd = vscode.commands.registerCommand('confluence-smart-publisher.publishConfluence', async (uri: vscode.Uri) => {
 		if (!uri || !uri.fsPath.endsWith('.confluence')) {
-			vscode.window.showErrorMessage('Selecione um arquivo .confluence para publicar.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFile'));
 			return;
 		}
 		try {
 			await vscode.window.withProgress({
 				location: vscode.ProgressLocation.Notification,
-				title: 'Publicando no Confluence...',
+				title: vscode.l10n.t('confluence.progress.publishing'),
 				cancellable: false
 			}, async () => {
-				outputChannel.appendLine(`[Publicar] Iniciando publicação do arquivo: ${uri.fsPath}`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.publishStart', uri.fsPath));
 				const result = await publishConfluenceFile(uri.fsPath);
-				outputChannel.appendLine(`[Publicar] Página publicada com sucesso! ID: ${result.pageId}`);
-				vscode.window.showInformationMessage(`Página publicada com sucesso! ID: ${result.pageId}`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.publishSuccess', result.pageId));
+				vscode.window.showInformationMessage(vscode.l10n.t('confluence.success.published', result.pageId));
 			});
 		} catch (e: any) {
-			outputChannel.appendLine(`[Publicar] Erro ao publicar: ${e.message || e}`);
+			outputChannel.appendLine(vscode.l10n.t('confluence.log.publishError', e.message || e));
 			outputChannel.show(true);
-			vscode.window.showErrorMessage(`Erro ao publicar no Confluence: ${e.message || e}`);
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.publishing', e.message || e));
 		}
 	});
 
-	// Comando para baixar página por título
+	// Command to download page by title
 	const getPageByTitleCmd = vscode.commands.registerCommand('confluence-smart-publisher.getPageByTitle', async (uri: vscode.Uri) => {
 		if (!uri || !uri.fsPath) {
-			vscode.window.showErrorMessage('Selecione uma pasta para salvar a página.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFolder'));
 			return;
 		}
 		const stat = await vscode.workspace.fs.stat(uri);
 		if (stat.type !== vscode.FileType.Directory) {
-			vscode.window.showErrorMessage('Selecione uma pasta para salvar a página.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFolder'));
 			return;
 		}
-		const spaceKey = await vscode.window.showInputBox({ prompt: 'Informe o Space Key do Confluence', ignoreFocusOut: true });
+		const spaceKey = await vscode.window.showInputBox({ prompt: vscode.l10n.t('confluence.input.spaceKey'), ignoreFocusOut: true });
 		if (!spaceKey) {
-			vscode.window.showWarningMessage('Space Key não informado.');
+			vscode.window.showWarningMessage(vscode.l10n.t('confluence.warning.spaceKeyNotProvided'));
 			return;
 		}
-		const title = await vscode.window.showInputBox({ prompt: 'Informe o título exato da página', ignoreFocusOut: true });
+		const title = await vscode.window.showInputBox({ prompt: vscode.l10n.t('confluence.input.pageTitle'), ignoreFocusOut: true });
 		if (!title) {
-			vscode.window.showWarningMessage('Título não informado.');
+			vscode.window.showWarningMessage(vscode.l10n.t('confluence.warning.pageTitleNotProvided'));
 			return;
 		}
 		try {
 			await vscode.window.withProgress({
 				location: vscode.ProgressLocation.Notification,
-				title: 'Baixando página do Confluence...',
+				title: vscode.l10n.t('confluence.progress.downloading'),
 				cancellable: false
 			}, async () => {
-				outputChannel.appendLine(`[Download por Título] Buscando página: SpaceKey=${spaceKey}, Título=${title}`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.downloadByTitleSearch', spaceKey, title));
 				const client = new ConfluenceClient();
 				const page = await client.getPageByTitle(spaceKey, title);
-				if (!page) {throw new Error('Página não encontrada.');}
+				if (!page) {throw new Error(vscode.l10n.t('confluence.error.pageNotFound'));}
 				const pageId = page.id;
 				const filePath = await client.downloadConfluencePage(pageId, BodyFormat.STORAGE, uri.fsPath);
-				outputChannel.appendLine(`[Download por Título] Página baixada em: ${filePath}`);
-				vscode.window.showInformationMessage(`Página baixada em: ${filePath}`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.downloadByTitleSuccess', filePath));
+				vscode.window.showInformationMessage(vscode.l10n.t('confluence.success.downloaded', filePath));
 			});
 		} catch (e: any) {
-			outputChannel.appendLine(`[Download por Título] Erro: ${e.message || e}`);
+			outputChannel.appendLine(vscode.l10n.t('confluence.log.downloadByTitleError', e.message || e));
 			outputChannel.show(true);
-			vscode.window.showErrorMessage(`Erro ao baixar página: ${e.message || e}`);
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.downloading', e.message || e));
 		}
 	});
 
-	// Comando para baixar página por ID
+	// Command to download page by ID
 	const getPageByIdCmd = vscode.commands.registerCommand('confluence-smart-publisher.getPageById', async (uri: vscode.Uri) => {
 		if (!uri || !uri.fsPath) {
-			vscode.window.showErrorMessage('Selecione uma pasta para salvar a página.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFolder'));
 			return;
 		}
 		const stat = await vscode.workspace.fs.stat(uri);
 		if (stat.type !== vscode.FileType.Directory) {
-			vscode.window.showErrorMessage('Selecione uma pasta para salvar a página.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFolder'));
 			return;
 		}
-		const pageId = await vscode.window.showInputBox({ prompt: 'Informe o ID da página do Confluence', ignoreFocusOut: true });
+		const pageId = await vscode.window.showInputBox({ prompt: vscode.l10n.t('confluence.input.pageId'), ignoreFocusOut: true });
 		if (!pageId) {
-			vscode.window.showWarningMessage('ID da página não informado.');
+			vscode.window.showWarningMessage(vscode.l10n.t('confluence.warning.pageIdNotProvided'));
 			return;
 		}
 		try {
 			await vscode.window.withProgress({
 				location: vscode.ProgressLocation.Notification,
-				title: 'Baixando página do Confluence...',
+				title: vscode.l10n.t('confluence.progress.downloading'),
 				cancellable: false
 			}, async () => {
-				outputChannel.appendLine(`[Download por ID] Buscando página: ID=${pageId}`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.downloadByIdSearch', pageId));
 				const client = new ConfluenceClient();
 				const filePath = await client.downloadConfluencePage(pageId, BodyFormat.STORAGE, uri.fsPath);
-				outputChannel.appendLine(`[Download por ID] Página baixada em: ${filePath}`);
-				vscode.window.showInformationMessage(`Página baixada em: ${filePath}`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.downloadByIdSuccess', filePath));
+				vscode.window.showInformationMessage(vscode.l10n.t('confluence.success.downloaded', filePath));
 			});
 		} catch (e: any) {
-			outputChannel.appendLine(`[Download por ID] Erro: ${e.message || e}`);
+			outputChannel.appendLine(vscode.l10n.t('confluence.log.downloadByIdError', e.message || e));
 			outputChannel.show(true);
-			vscode.window.showErrorMessage(`Erro ao baixar página: ${e.message || e}`);
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.downloading', e.message || e));
 		}
 	});
 
-	// Comando para criar página a partir de modelo
+	// Command to create page from template
 	const createPageCmd = vscode.commands.registerCommand('confluence-smart-publisher.createPage', async (uri: vscode.Uri) => {
 		if (!uri || !uri.fsPath) {
-			vscode.window.showErrorMessage('Selecione uma pasta para criar a nova página.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFolder'));
 			return;
 		}
 		const stat = await vscode.workspace.fs.stat(uri);
 		if (stat.type !== vscode.FileType.Directory) {
-			vscode.window.showErrorMessage('Selecione uma pasta para criar a nova página.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFolder'));
 			return;
 		}
 
-		const nomeArquivo = await vscode.window.showInputBox({ prompt: 'Digite o nome do novo arquivo (ex: NovaPagina.confluence)', ignoreFocusOut: true });
-		if (!nomeArquivo) {
-			vscode.window.showWarningMessage('Nome do arquivo não informado.');
+		const fileName = await vscode.window.showInputBox({ prompt: vscode.l10n.t('confluence.input.fileName'), ignoreFocusOut: true });
+		if (!fileName) {
+			vscode.window.showWarningMessage(vscode.l10n.t('confluence.warning.fileNameNotProvided'));
 			return;
 		}
 
-		const modeloId = await vscode.window.showInputBox({ prompt: 'Digite o ID do arquivo modelo', ignoreFocusOut: true });
-		if (!modeloId) {
-			vscode.window.showWarningMessage('ID do arquivo modelo não informado.');
+		const templateId = await vscode.window.showInputBox({ prompt: vscode.l10n.t('confluence.input.templateId'), ignoreFocusOut: true });
+		if (!templateId) {
+			vscode.window.showWarningMessage(vscode.l10n.t('confluence.warning.templateIdNotProvided'));
 			return;
 		}
 
 		try {
 			await vscode.window.withProgress({
 				location: vscode.ProgressLocation.Notification,
-				title: 'Baixando arquivo modelo do Confluence...',
+				title: vscode.l10n.t('confluence.progress.downloading'),
 				cancellable: false
 			}, async () => {
-				outputChannel.appendLine(`[Criar Página] Baixando modelo: ID=${modeloId}`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.createPageDownload', templateId));
 				const client = new ConfluenceClient();
 				const tempDir = uri.fsPath;
-				const modeloPath = await client.downloadConfluencePage(modeloId, BodyFormat.STORAGE, tempDir);
+				const templatePath = await client.downloadConfluencePage(templateId, BodyFormat.STORAGE, tempDir);
 				const fs = await import('fs');
-				let conteudo = fs.readFileSync(modeloPath, 'utf-8');
-				conteudo = conteudo.replace(/<csp:file_id>.*?<\/csp:file_id>\s*/s, '');
-				const novoArquivoPath = path.join(uri.fsPath, nomeArquivo.endsWith('.confluence') ? nomeArquivo : nomeArquivo + '.confluence');
-				fs.writeFileSync(novoArquivoPath, conteudo, { encoding: 'utf-8' });
-				outputChannel.appendLine(`[Criar Página] Arquivo ${nomeArquivo} criado em ${novoArquivoPath}`);
-				vscode.window.showInformationMessage(`Arquivo ${nomeArquivo} criado com sucesso!`);
+				let content = fs.readFileSync(templatePath, 'utf-8');
+				content = content.replace(/<csp:file_id>.*?<\/csp:file_id>\s*/s, '');
+				const newFilePath = path.join(uri.fsPath, fileName.endsWith('.confluence') ? fileName : fileName + '.confluence');
+				fs.writeFileSync(newFilePath, content, { encoding: 'utf-8' });
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.createPageSuccess', fileName, newFilePath));
+				vscode.window.showInformationMessage(vscode.l10n.t('confluence.success.downloaded', newFilePath));
 			});
 		} catch (e: any) {
-			outputChannel.appendLine(`[Criar Página] Erro: ${e.message || e}`);
+			outputChannel.appendLine(vscode.l10n.t('confluence.log.createPageError', e.message || e));
 			outputChannel.show(true);
-			vscode.window.showErrorMessage(`Erro ao criar página: ${e.message || e}`);
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.downloading', e.message || e));
 		}
 	});
 
-	// Comando para formatar arquivo .confluence
+	// Command to format .confluence file
 	const formatConfluenceCmd = vscode.commands.registerCommand('confluence-smart-publisher.formatConfluence', async (uri: vscode.Uri) => {
 		if (!uri || !uri.fsPath.endsWith('.confluence')) {
-			vscode.window.showErrorMessage('Selecione um arquivo .confluence para formatar.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFileFormat'));
 			return;
 		}
 		try {
@@ -233,16 +237,16 @@ export function activate(context: vscode.ExtensionContext) {
 				const end = new vscode.Position(document.lineCount, 0);
 				editBuilder.replace(new vscode.Range(start, end), formatted);
 			});
-			outputChannel.appendLine(`[Formatar] Arquivo formatado: ${uri.fsPath}`);
-			vscode.window.showInformationMessage('Arquivo formatado com sucesso!');
+			outputChannel.appendLine(vscode.l10n.t('confluence.log.formatSuccess', uri.fsPath));
+			vscode.window.showInformationMessage(vscode.l10n.t('confluence.success.formatted'));
 		} catch (e: any) {
-			outputChannel.appendLine(`[Formatar] Erro ao formatar: ${e.message || e}`);
+			outputChannel.appendLine(vscode.l10n.t('confluence.log.formatError', e.message || e));
 			outputChannel.show(true);
-			vscode.window.showErrorMessage(`Erro ao formatar arquivo: ${e.message || e}`);
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.formatting', e.message || e));
 		}
 	});
 
-	// Registrar o formatter para arquivos .confluence
+	// Register formatter for .confluence files
 	const confluenceFormatter = vscode.languages.registerDocumentFormattingEditProvider('confluence', {
 		async provideDocumentFormattingEdits(document) {
 			const text = document.getText();
@@ -252,7 +256,7 @@ export function activate(context: vscode.ExtensionContext) {
 				const numberChapters = config.get('format.numberChapters', false);
 				formatted = formatConfluenceDocument(text, numberChapters, outputChannel);
 			} catch (e) {
-				// Se der erro, retorna o texto original
+				// If error occurs, return original text
 			}
 			return [
 				vscode.TextEdit.replace(
@@ -266,28 +270,28 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	// Adicionar sugestões para atributos opcionais e valores permitidos
+	// Add suggestions for optional attributes and allowed values
 	const optionalAttrsMap: Record<string, string[]> = {
-		// Exemplo: 'ac:layout': ['ac:layout-section', 'ac:layout-cell', ...]
-		// Preencher com base nos atributos opcionais conhecidos do seu domínio
-		// Exemplo realista:
+		// Example: 'ac:layout': ['ac:layout-section', 'ac:layout-cell', ...]
+		// Fill with base on known attributes of your domain
+		// Realistic example:
 		'ac:layout': ['ac:layout-section', 'ac:layout-cell'],
-		// Adicione outros conforme necessário
+		// Add more as needed
 	};
 
-	// Registrar o CompletionItemProvider para auto complete de tags customizadas
+	// Register CompletionItemProvider for auto complete of custom tags
 	const allCustomTags = Object.keys(allowedTags);
 	const tagCompletionProvider = vscode.languages.registerCompletionItemProvider('confluence', {
 		provideCompletionItems(document, position) {
 			const line = document.lineAt(position).text.substr(0, position.character);
-			// Sugestão ao digitar <
+			// Suggestion when typing <
 			if (line.endsWith('<')) {
 				return allCustomTags.map(tag => {
 					const requiredAttrs = allowedTags[tag] || [];
 					const optionalAttrs = optionalAttrsMap[tag] || [];
 					let snippet = tag;
 					let attrSnippets: string[] = [];
-					// Se for a tag raiz, já inclui o namespace
+					// If it's the root tag, already include the namespace
 					if (tag === 'csp:parameters') {
 						snippet += ' xmlns:csp="https://confluence.smart.publisher/csp"';
 					}
@@ -307,25 +311,25 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 					const item = new vscode.CompletionItem(tag, vscode.CompletionItemKind.Snippet);
 					item.insertText = new vscode.SnippetString(snippet + `</${tag}>`);
-					item.detail = 'Tag customizada do Confluence';
+					item.detail = 'Custom Confluence tag';
 					item.documentation = [
-						requiredAttrs.length > 0 ? `Atributos obrigatórios: ${requiredAttrs.join(', ')}` : undefined,
-						optionalAttrs.length > 0 ? `Atributos opcionais: ${optionalAttrs.join(', ')}` : undefined,
-						tag === 'csp:parameters' ? 'Inclui automaticamente o namespace obrigatório.' : undefined
+						requiredAttrs.length > 0 ? `Required attributes: ${requiredAttrs.join(', ')}` : undefined,
+						optionalAttrs.length > 0 ? `Optional attributes: ${optionalAttrs.join(', ')}` : undefined,
+						tag === 'csp:parameters' ? 'Automatically includes the required namespace.' : undefined
 					].filter(Boolean).join('\n');
 					return item;
 				});
 			}
-			// Sugestão de fechamento ao digitar </
+			// Suggestion of closing when typing </
 			if (line.endsWith('</')) {
 				return allCustomTags.map(tag => {
 					const item = new vscode.CompletionItem(`/${tag}`, vscode.CompletionItemKind.Snippet);
 					item.insertText = `${tag}>`;
-					item.detail = 'Fechar tag customizada';
+					item.detail = 'Close custom tag';
 					return item;
 				});
 			}
-			// Sugestão de atributos obrigatórios e opcionais ao abrir uma tag
+			// Suggestion of required and optional attributes when opening a tag
 			const tagOpenMatch = line.match(/<([\w\-:]+)\s+([^>]*)?$/);
 			if (tagOpenMatch) {
 				const tag = tagOpenMatch[1];
@@ -336,17 +340,17 @@ export function activate(context: vscode.ExtensionContext) {
 					return allAttrs.map(attr => {
 						const item = new vscode.CompletionItem(attr, vscode.CompletionItemKind.Property);
 						item.insertText = `${attr}="$1"`;
-						item.detail = requiredAttrs.includes(attr) ? 'Atributo obrigatório' : 'Atributo opcional';
-						// Sugestão de valores permitidos para o atributo
+						item.detail = requiredAttrs.includes(attr) ? 'Required attribute' : 'Optional attribute';
+						// Suggestion of allowed values for the attribute
 						const allowedKey = `${tag}@${attr}`;
 						if (allowedValues[allowedKey]) {
-							item.documentation = 'Valores permitidos: ' + allowedValues[allowedKey].join(', ');
+							item.documentation = 'Allowed values: ' + allowedValues[allowedKey].join(', ');
 						}
 						return item;
 					});
 				}
 			}
-			// Sugestão de valores permitidos ao digitar dentro de um atributo
+			// Suggestion of allowed values when typing inside an attribute
 			const attrValueMatch = line.match(/<([\w\-:]+)[^>]*\s([\w\-:]+)="[^"]*$/);
 			if (attrValueMatch) {
 				const tag = attrValueMatch[1];
@@ -356,7 +360,7 @@ export function activate(context: vscode.ExtensionContext) {
 					return allowedValues[allowedKey].map((val: string) => {
 						const item = new vscode.CompletionItem(val, vscode.CompletionItemKind.Value);
 						item.insertText = val;
-						item.detail = 'Valor permitido';
+						item.detail = 'Allowed value';
 						return item;
 					});
 				}
@@ -365,10 +369,10 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}, '<', '/');
 
-	// Comando para comparar arquivo local com publicado no Confluence
+	// Command to compare local file with published on Confluence
 	const diffWithPublishedCmd = vscode.commands.registerCommand('confluence-smart-publisher.diffWithPublished', async (uri: vscode.Uri) => {
 		if (!uri || !uri.fsPath.endsWith('.confluence')) {
-			vscode.window.showErrorMessage('Selecione um arquivo .confluence para comparar.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFileCompare'));
 			return;
 		}
 		const fs = await import('fs');
@@ -382,9 +386,9 @@ export function activate(context: vscode.ExtensionContext) {
 		} catch (e) {}
 
 		if (!fileId) {
-			const input = await vscode.window.showInputBox({ prompt: 'Informe o ID da página do Confluence para comparar', ignoreFocusOut: true });
+			const input = await vscode.window.showInputBox({ prompt: vscode.l10n.t('confluence.input.pageId'), ignoreFocusOut: true });
 			if (!input) {
-				vscode.window.showWarningMessage('ID da página não informado.');
+				vscode.window.showWarningMessage(vscode.l10n.t('confluence.warning.pageIdNotProvided'));
 				return;
 			}
 			fileId = input;
@@ -393,48 +397,48 @@ export function activate(context: vscode.ExtensionContext) {
 		try {
 			await vscode.window.withProgress({
 				location: vscode.ProgressLocation.Notification,
-				title: 'Baixando versão publicada do Confluence...',
+				title: vscode.l10n.t('confluence.progress.comparing'),
 				cancellable: false
 			}, async () => {
-				outputChannel.appendLine(`[Diff] Comparando arquivo local com publicado. fileId=${fileId}`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.diffComparing', fileId));
 				const client = new ConfluenceClient();
 				const temp = require('os').tmpdir();
 				const fs = await import('fs');
 				const path = await import('path');
 				const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
 				const numberChapters = config.get('format.numberChapters', false);
-				// Baixa o arquivo publicado
+				// Download the published file
 				const publishedPath = await client.downloadConfluencePage(fileId, BodyFormat.STORAGE, temp);
 
-				// Lê e formata o conteúdo local
+				// Read and format local content
 				const localContent = fs.readFileSync(uri.fsPath, 'utf-8');
 				const formattedLocal = formatConfluenceDocument(localContent, numberChapters, outputChannel);
 				const formattedLocalPath = path.join(temp, 'local_formatted_' + path.basename(uri.fsPath));
 				fs.writeFileSync(formattedLocalPath, formattedLocal, { encoding: 'utf-8' });
 
-				// Lê e formata o conteúdo publicado
+				// Read and format published content
 				const publishedContent = fs.readFileSync(publishedPath, 'utf-8');
 				const formattedPublished = formatConfluenceDocument(publishedContent, numberChapters, outputChannel);
 				const formattedPublishedPath = path.join(temp, 'published_formatted_' + path.basename(publishedPath));
 				fs.writeFileSync(formattedPublishedPath, formattedPublished, { encoding: 'utf-8' });
 
-				outputChannel.appendLine(`[Diff] Arquivos formatados prontos para diff.`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.diffReady'));
 				const leftUri = vscode.Uri.file(formattedLocalPath);
 				const rightUri = vscode.Uri.file(formattedPublishedPath);
-				const title = `Diff: Local (formatado) ↔ Publicado (formatado) (${fileId})`;
+				const title = vscode.l10n.t('confluence.diff.title', fileId);
 				await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, title);
 			});
 		} catch (e: any) {
-			outputChannel.appendLine(`[Diff] Erro ao comparar: ${e.message || e}`);
+			outputChannel.appendLine(vscode.l10n.t('confluence.log.diffError', e.message || e));
 			outputChannel.show(true);
-			vscode.window.showErrorMessage(`Erro ao comparar: ${e.message || e}`);
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.comparing', e.message || e));
 		}
 	});
 
 	// Comando para sincronizar arquivo local com o publicado no Confluence
 	const syncWithPublishedCmd = vscode.commands.registerCommand('confluence-smart-publisher.syncWithPublished', async (uri: vscode.Uri) => {
 		if (!uri || !uri.fsPath.endsWith('.confluence')) {
-			vscode.window.showErrorMessage('Selecione um arquivo .confluence para sincronizar.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFileSync'));
 			return;
 		}
 		const fs = await import('fs');
@@ -448,9 +452,9 @@ export function activate(context: vscode.ExtensionContext) {
 		} catch (e) {}
 
 		if (!fileId) {
-			const input = await vscode.window.showInputBox({ prompt: 'Informe o ID da página do Confluence para sincronizar', ignoreFocusOut: true });
+			const input = await vscode.window.showInputBox({ prompt: vscode.l10n.t('confluence.input.pageId'), ignoreFocusOut: true });
 			if (!input) {
-				vscode.window.showWarningMessage('ID da página não informado.');
+				vscode.window.showWarningMessage(vscode.l10n.t('confluence.warning.pageIdNotProvided'));
 				return;
 			}
 			fileId = input;
@@ -459,10 +463,10 @@ export function activate(context: vscode.ExtensionContext) {
 		try {
 			await vscode.window.withProgress({
 				location: vscode.ProgressLocation.Notification,
-				title: 'Baixando versão publicada do Confluence...',
+				title: vscode.l10n.t('confluence.progress.synchronizing'),
 				cancellable: false
 			}, async () => {
-				outputChannel.appendLine(`[Sync] Baixando versão publicada para sincronização. fileId=${fileId}`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.syncDownloading', fileId));
 				const client = new ConfluenceClient();
 				const temp = require('os').tmpdir();
 				const fs = await import('fs');
@@ -484,66 +488,66 @@ export function activate(context: vscode.ExtensionContext) {
 				const formattedPublishedPath = path.join(temp, 'published_formatted_' + path.basename(publishedPath));
 				fs.writeFileSync(formattedPublishedPath, formattedPublished, { encoding: 'utf-8' });
 
-				outputChannel.appendLine(`[Sync] Exibindo diff para decisão do usuário.`);
+				outputChannel.appendLine(vscode.l10n.t('confluence.log.syncShowingDiff'));
 				const leftUri = vscode.Uri.file(formattedLocalPath);
 				const rightUri = vscode.Uri.file(formattedPublishedPath);
-				const title = `Diff: Local (formatado) ↔ Publicado (formatado) (${fileId})`;
+				const title = `Diff: Local (formatted) ↔ Published (formatted) (${fileId})`;
 				await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, title);
 
 				const escolha = await vscode.window.showQuickPick([
 					{
-						label: 'Atualizar arquivo local com o conteúdo online',
-						detail: 'Sobrescreve o arquivo local com o conteúdo baixado do Confluence.'
+						label: vscode.l10n.t('Update local file with online content'),
+						detail: vscode.l10n.t('Overwrites the local file with content downloaded from Confluence.')
 					},
 					{
-						label: 'Atualizar o Confluence com o conteúdo local',
-						detail: 'Publica o arquivo local no Confluence.'
+						label: vscode.l10n.t('Update Confluence with local content'),
+						detail: vscode.l10n.t('Publishes the local file to Confluence.')
 					},
 					{
-						label: 'Cancelar',
-						detail: 'Não faz nenhuma alteração.'
+						label: vscode.l10n.t('Cancel'),
+						detail: vscode.l10n.t('Makes no changes.')
 					}
-				], { placeHolder: 'Escolha a ação de sincronização' });
+				], { placeHolder: vscode.l10n.t('Choose synchronization action') });
 
-				if (!escolha || escolha.label === 'Cancelar') {
-					outputChannel.appendLine('[Sync] Sincronização cancelada pelo usuário.');
+				if (!escolha || escolha.label === vscode.l10n.t('Cancel')) {
+					outputChannel.appendLine(vscode.l10n.t('confluence.log.syncCancelled'));
 					return;
 				}
 
-				if (escolha.label === 'Atualizar arquivo local com o conteúdo online') {
+				if (escolha.label === vscode.l10n.t('Update local file with online content')) {
 					fs.writeFileSync(uri.fsPath, publishedContent, { encoding: 'utf-8' });
-					outputChannel.appendLine('[Sync] Arquivo local atualizado com sucesso!');
-					vscode.window.showInformationMessage('Arquivo local atualizado com sucesso!');
-				} else if (escolha.label === 'Atualizar o Confluence com o conteúdo local') {
+					outputChannel.appendLine(vscode.l10n.t('confluence.log.syncLocalSuccess'));
+					vscode.window.showInformationMessage(vscode.l10n.t('confluence.success.syncLocalUpdated'));
+				} else if (escolha.label === vscode.l10n.t('Update Confluence with local content')) {
 					await vscode.window.withProgress({
 						location: vscode.ProgressLocation.Notification,
-						title: 'Publicando conteúdo local no Confluence...',
+						title: vscode.l10n.t('confluence.progress.uploadingContent'),
 						cancellable: false
 					}, async () => {
-						outputChannel.appendLine('[Sync] Publicando conteúdo local no Confluence...');
+						outputChannel.appendLine(vscode.l10n.t('confluence.log.syncPublishing'));
 						await publishConfluenceFile(uri.fsPath);
-						outputChannel.appendLine('[Sync] Conteúdo local publicado com sucesso!');
-						vscode.window.showInformationMessage('Conteúdo local publicado no Confluence com sucesso!');
+						outputChannel.appendLine(vscode.l10n.t('confluence.log.syncPublishSuccess'));
+						vscode.window.showInformationMessage(vscode.l10n.t('confluence.success.syncPublishedUpdated'));
 					});
 				}
 			});
 		} catch (e: any) {
-			outputChannel.appendLine(`[Sync] Erro ao sincronizar: ${e.message || e}`);
+			outputChannel.appendLine(vscode.l10n.t('confluence.log.syncError', e.message || e));
 			outputChannel.show(true);
-			vscode.window.showErrorMessage(`Erro ao sincronizar: ${e.message || e}`);
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.synchronizing', e.message || e));
 		}
 	});
 
 	// Comando para definir emoji do título com picker visual
 	const setEmojiTitleWebviewCmd = vscode.commands.registerCommand('confluence-smart-publisher.setEmojiTitle', async (uri: vscode.Uri) => {
 		if (!uri || !uri.fsPath.endsWith('.confluence')) {
-			vscode.window.showErrorMessage('Selecione um arquivo .confluence para definir o emoji do título.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFileEmoji'));
 			return;
 		}
 
 		const panel = vscode.window.createWebviewPanel(
 			'cspEmojiPicker',
-			'Selecione o Emoji do Título',
+			vscode.l10n.t('confluence.webview.title.emojiPicker'),
 			vscode.ViewColumn.Active,
 			{
 				enableScripts: true,
@@ -557,7 +561,7 @@ export function activate(context: vscode.ExtensionContext) {
 				const emoji = message.emoji;
 				const codePoint = emoji.codePointAt(0)?.toString(16);
 				if (!codePoint) {
-					vscode.window.showErrorMessage('Erro ao obter código do emoji.');
+					vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.emojiCode'));
 					return;
 				}
 				const fs = await import('fs');
@@ -582,10 +586,10 @@ export function activate(context: vscode.ExtensionContext) {
 						}
 					});
 				} else {
-					novoContent = `<csp:parameters xmlns:csp=\"https://confluence.smart.publisher/csp\">\n  <csp:properties>\n  ${emojiProps}\n  </csp:properties>\n</csp:parameters>\n` + content;
+					novoContent = vscode.l10n.t('confluence.webview.html.script.parameters', emojiProps) + content;
 				}
 				fs.writeFileSync(uri.fsPath, novoContent, { encoding: 'utf-8' });
-				vscode.window.showInformationMessage('Emoji do título definido com sucesso!');
+				vscode.window.showInformationMessage(vscode.l10n.t('confluence.success.emojiSet'));
 				panel.dispose();
 			}
 		});
@@ -593,29 +597,32 @@ export function activate(context: vscode.ExtensionContext) {
 
 	function getEmojiPickerHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
 		const nonce = Date.now().toString();
-		const emojiMartCdn = 'https://cdn.jsdelivr.net/npm/emoji-mart@5.4.0/dist/browser.js';
+		const emojiMartCdn = vscode.l10n.t('confluence.webview.html.script.cdn');
 		return `
 		<!DOCTYPE html>
-		<html lang="pt-br">
+		<html lang="${vscode.l10n.t('confluence.webview.html.lang')}">
 		<head>
-			<meta charset="UTF-8">
-			<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-eval' 'unsafe-inline' ${webview.cspSource} https://cdn.jsdelivr.net; style-src ${webview.cspSource} 'unsafe-inline'; connect-src *; img-src data: https:;">
-			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<title>Selecionar Emoji</title>
+			<meta charset="${vscode.l10n.t('confluence.webview.html.charset')}">
+			<meta http-equiv="Content-Security-Policy" content="${vscode.l10n.t('confluence.webview.html.script.csp', webview.cspSource)}">
+			<meta name="viewport" content="${vscode.l10n.t('confluence.webview.html.viewport')}">
+			<title>${vscode.l10n.t('confluence.webview.html.title')}</title>
 		</head>
 		<body>
-			<div id="picker"></div>
+			<div id="${vscode.l10n.t('confluence.webview.html.picker.id')}"></div>
 			<script src="${emojiMartCdn}"></script>
-			<script nonce="${nonce}">
+			<script nonce="${vscode.l10n.t('confluence.webview.html.script.nonce', nonce)}">
 				const picker = new EmojiMart.Picker({
-					onEmojiSelect: (emoji) => {
-						const vscode = acquireVsCodeApi();
-						vscode.postMessage({ command: 'emojiSelected', emoji: emoji.native });
+					onEmojiSelect: (${vscode.l10n.t('confluence.webview.html.script.emoji')}) => {
+						const vscode = ${vscode.l10n.t('confluence.webview.html.script.acquire')}();
+						vscode.${vscode.l10n.t('confluence.webview.html.script.postMessage')}({ 
+							command: '${vscode.l10n.t('confluence.webview.html.script.command')}', 
+							emoji: ${vscode.l10n.t('confluence.webview.html.script.emoji')}.${vscode.l10n.t('confluence.webview.html.script.native')} 
+						});
 					},
-					locale: 'pt',
-					theme: 'auto',
+					locale: '${vscode.l10n.t('confluence.webview.html.script.locale')}',
+					theme: '${vscode.l10n.t('confluence.webview.html.script.theme')}',
 				});
-				document.getElementById('picker').appendChild(picker);
+				document.getElementById('${vscode.l10n.t('confluence.webview.html.picker.id')}').${vscode.l10n.t('confluence.webview.html.script.appendChild')}(picker);
 			</script>
 		</body>
 		</html>
@@ -625,7 +632,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Comando para decodificar entidades HTML em arquivos .confluence
 	const decodeHtmlCmd = vscode.commands.registerCommand('confluence-smart-publisher.decodeHtml', async (uri: vscode.Uri) => {
 		if (!uri || !uri.fsPath.endsWith('.confluence')) {
-			vscode.window.showErrorMessage('Selecione um arquivo .confluence para decodificar.');
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.selectFileDecode'));
 			return;
 		}
 		try {
@@ -638,12 +645,12 @@ export function activate(context: vscode.ExtensionContext) {
 				const end = new vscode.Position(document.lineCount, 0);
 				editBuilder.replace(new vscode.Range(start, end), decoded);
 			});
-			outputChannel.appendLine(`[Decodificar HTML] Arquivo decodificado: ${uri.fsPath}`);
-			vscode.window.showInformationMessage('Entidades HTML decodificadas com sucesso!');
+			outputChannel.appendLine(vscode.l10n.t('confluence.log.decodeSuccess', uri.fsPath));
+			vscode.window.showInformationMessage(vscode.l10n.t('confluence.success.htmlDecoded'));
 		} catch (e: any) {
-			outputChannel.appendLine(`[Decodificar HTML] Erro ao decodificar: ${e.message || e}`);
+			outputChannel.appendLine(vscode.l10n.t('confluence.log.decodeError', e.message || e));
 			outputChannel.show(true);
-			vscode.window.showErrorMessage(`Erro ao decodificar entidades HTML: ${e.message || e}`);
+			vscode.window.showErrorMessage(vscode.l10n.t('confluence.error.downloading', e.message || e));
 		}
 	});
 
@@ -652,5 +659,5 @@ export function activate(context: vscode.ExtensionContext) {
 
 // This method is called when your extension is deactivated
 export function deactivate() {
-	outputChannel.appendLine('Confluence Smart Publisher desativado!');
+	outputChannel.appendLine(vscode.l10n.t('confluence.log.deactivated'));
 }

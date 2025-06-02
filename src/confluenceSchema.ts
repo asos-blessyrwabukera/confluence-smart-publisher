@@ -1,13 +1,13 @@
-// Definição centralizada do comportamento das tags
-// block:      tags que devem ser formatadas como blocos (com quebra de linha e identação)
-//             Exemplo de formatação:
+// Central definition of tag behavior
+// block:      tags that should be formatted as blocks (with line breaks and indentation)
+//             Formatting example:
 //               <table>
 //                 ...
 //               </table>
-// inline:     tags que podem aparecer dentro de outras sem quebra de linha obrigatória
-//             Exemplo de formatação:
+// inline:     tags that can appear within others without mandatory line breaks
+//             Formatting example:
 //               <p>
-//                 Algum <span>texto</span> com <a href="#">link</a> e <strong>negrito</strong>.
+//                 Some <span>text</span> with <a href="#">link</a> and <strong>bold</strong>.
 //               </p>
 export const TAG_BEHAVIOR: Record<string, { type: 'block' | 'inline' }> = {
 	// Confluence Storage Format
@@ -78,7 +78,7 @@ export const TAG_BEHAVIOR: Record<string, { type: 'block' | 'inline' }> = {
 };
 
 export const allowedTags: Record<string, string[]> = {
-	// Tags de layout e macro do Confluence
+	// Confluence layout and macro tags
 	'ac:layout': ['type', 'version', 'ac:layout-section'],
 	'ac:layout-section': ['type'],
 	'ac:layout-cell': ['id', 'style'],
@@ -95,7 +95,7 @@ export const allowedTags: Record<string, string[]> = {
 	'ac:task-body': [],
 	'ac:placeholder': [],
 	'ac:emoticon': ['ac:name'],
-	// Tags de recursos (Resource Identifiers)
+	// Resource Identifiers tags
 	'ri:page': ['ri:content-title', 'ri:space-key'],
 	'ri:attachment': ['ri:filename'],
 	'ri:url': ['ri:value'],
@@ -104,14 +104,14 @@ export const allowedTags: Record<string, string[]> = {
 	'ri:space': ['ri:space-key'],
 	'ri:content-entity': ['ri:content-id'],
 	'ri:blog-post': ['ri:content-title', 'ri:posting-day'],
-	// Tags de template (variables)
+	// Template tags (variables)
 	'at:declarations': [],
 	'at:string': ['at:name'],
 	'at:textarea': ['at:name'],
 	'at:list': ['at:name'],
 	'at:option': ['at:value'],
 	'at:var': ['at:name'],
-	// Tags customizadas do plugin
+	// Custom plugin tags
 	'csp:parameters': [],
 	'csp:file_id': [],
 	'csp:labels_list': [],
@@ -119,7 +119,7 @@ export const allowedTags: Record<string, string[]> = {
 	'csp:properties': [],
 	'csp:key': [],
 	'csp:value': [],
-	// Tags HTML principais suportadas pelo formato storage
+	// Main HTML tags supported by storage format
 	'p': [],
 	'h1': [],
 	'h2': [],
@@ -152,12 +152,12 @@ export const allowedTags: Record<string, string[]> = {
 	'td': [],
 	'th': [],
 	'img': ['src'],
-	// Outras tags comuns
+	// Other common tags
 	'div': [],
 	'center': [],
 	'ac:image': [],
 	'ac:status': [],
-	// Adicione outras tags do storage format conforme necessário
+	// Add other storage format tags as needed
 };
 
 export const allowedValues: Record<string, string[]> = {
@@ -165,11 +165,11 @@ export const allowedValues: Record<string, string[]> = {
 	'ac:layout@type': ['sectioned'],
 	'ac:layout@version': ['1'],
 	'ac:layout-section@type': ['single', 'double', 'triple', 'custom'],
-	// Adicione outros valores permitidos conforme necessário
+	// Add other allowed values as needed
 };
 
 export const allowedHierarchy: Record<string, string[]> = {
-	'ac:layout': [], // ac:layout pode ser root
+	'ac:layout': [], // ac:layout can be root
 	'ac:task': ['ac:task-list'],
 	'ac:task-status': ['ac:task'],
 	'ac:task-body': ['ac:task'],

@@ -151,7 +151,7 @@ function keepInlineTagsOnSameLine(text: string): string {
     'g'
   );
   
-  // Função para verificar se o conteúdo contém uma tag block
+  // Function to check if content contains a block tag
   const containsBlockTag = (content: string): boolean => {
     if (blockTags.length === 0) {return false;}
     const blockTagRegex = new RegExp(`<(${blockTags.join('|')})([^>]*)>`, 'i');
@@ -171,12 +171,12 @@ function keepInlineTagsOnSameLine(text: string): string {
         return match;
       }
       
-      // Caso contrário, limpa o conteúdo, preservando qualquer tag dentro dele
+      // Otherwise, clean the content, preserving any tags inside it
       const cleanedContent = content
-        .replace(/\n\s+</g, '<')         // Remove quebras antes de tags de abertura
-        .replace(/>\s+\n/g, '>')         // Remove quebras após tags de fechamento
-        .replace(/>\s+\n\s+</g, '><')    // Remove quebras entre tags
-        .replace(/\s+/g, ' ');           // Normaliza espaços
+        .replace(/\n\s+</g, '<')         // Remove breaks before opening tags
+        .replace(/>\s+\n/g, '>')         // Remove breaks after closing tags
+        .replace(/>\s+\n\s+</g, '><')    // Remove breaks between tags
+        .replace(/\s+/g, ' ');           // Normalize spaces
       
       return `<${tag}${attrs}>${cleanedContent}</${tag}>`;
     });
@@ -202,7 +202,7 @@ export function formatConfluenceDocument(text: string, numberChapters: boolean =
     formatted = formatted.replace(/\n{3,}/g, '\n\n');
     return formatted;
   } catch (e) {
-    vscode.window.showErrorMessage('Erro ao formatar o documento: ' + (e instanceof Error ? e.message : String(e)));
+    vscode.window.showErrorMessage('Error formatting document: ' + (e instanceof Error ? e.message : String(e)));
     return text;
   }
 }
@@ -218,15 +218,19 @@ function numberHeadings(text: string): string {
     counters[level - 1]++;
     // Prefixo esperado
     const expectedPrefix = counters.slice(0, level).filter(n => n > 0).join('.') + ' ';
-    // Remove todos os prefixos numéricos do início do conteúdo, quantas vezes aparecerem
+    // Remove all numeric prefixes from the beginning of content, as many times as they appear
     const cleanContent = cleanHeadingContent(content);
     return `${spaces}<${tag}>${expectedPrefix}${cleanContent}</${tag}>`;
   });
 }
 
 function cleanHeadingContent(content: string): string {
-  // Remove tudo que for número, ponto, traço, parêntese, colchete, chave e espaços do início
-  return content.replace(/^[\s\n\r0-9.\-–—()\[\]{}]+/, '').replace(/^([ \t\n\r]*)/, '');
+  // Remove all numeric prefixes from the beginning of content, as many times as they appear
+  let cleaned = content;
+  while (/^\d+(\.\d+)*\s+/.test(cleaned)) {
+    cleaned = cleaned.replace(/^\d+(\.\d+)*\s+/, '');
+  }
+  return cleaned;
 }
 
 // Decodifica entidades HTML apenas nos textos entre as tags, preservando tags e atributos
