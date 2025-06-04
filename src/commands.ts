@@ -382,31 +382,46 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 if (message.command === 'emojiSelected') {
                     const emoji = message.emoji;
                     try {
-                        const fs = await import('fs');
-                        const content = fs.readFileSync(uri.fsPath, 'utf-8');
-                        
-                        // Verifica se já existe um emoji no título
-                        const titleMatch = content.match(/<csp:title>(.*?)<\/csp:title>/);
-                        if (!titleMatch) {
-                            throw new Error('Title not found in file.');
+                        const codePoint = emoji.codePointAt(0)?.toString(16);
+                        if (!codePoint) {
+                            throw new Error('Error getting emoji code.');
                         }
 
-                        const currentTitle = titleMatch[1];
-                        const newTitle = emoji + ' ' + currentTitle.replace(/^[^\s]+\s/, ''); // Remove emoji existente se houver
+                        const fs = await import('fs');
+                        let content = fs.readFileSync(uri.fsPath, 'utf-8');
+                        const cspParamsRegex = /<csp:parameters[\s\S]*?<\/csp:parameters>/gi;
+                        const cspPropertiesRegex = /<csp:properties>[\s\S]*?<\/csp:properties>/i;
+                        const emojiKeysRegex = /<csp:key>emoji-title-draft<\/csp:key>\s*<csp:value>[a-zA-Z0-9]+<\/csp:value>\s*<csp:key>emoji-title-published<\/csp:key>\s*<csp:value>[a-zA-Z0-9]+<\/csp:value>/;
+                        const emojiProps = `<csp:key>emoji-title-draft</csp:key>\n  <csp:value>${codePoint}</csp:value>\n  <csp:key>emoji-title-published</csp:key>\n  <csp:value>${codePoint}</csp:value>`;
+                        
+                        let novoContent = content;
+                        if (cspParamsRegex.test(content)) {
+                            novoContent = content.replace(cspParamsRegex, (paramsBlock) => {
+                                if (cspPropertiesRegex.test(paramsBlock)) {
+                                    return paramsBlock.replace(cspPropertiesRegex, (propertiesBlock) => {
+                                        if (emojiKeysRegex.test(propertiesBlock)) {
+                                            return propertiesBlock.replace(emojiKeysRegex, emojiProps);
+                                        } else {
+                                            return propertiesBlock.replace(/(<\/csp:properties>)/, `  ${emojiProps}\n$1`);
+                                        }
+                                    });
+                                } else {
+                                    return paramsBlock.replace(/(<\/csp:parameters>)/, `  <csp:properties>\n  ${emojiProps}\n  </csp:properties>\n$1`);
+                                }
+                            });
+                        } else {
+                            novoContent = `<csp:parameters xmlns:csp=\"https://confluence.smart.publisher/csp\">\n  <csp:properties>\n  ${emojiProps}\n  </csp:properties>\n</csp:parameters>\n` + content;
+                        }
 
-                        const newContent = content.replace(
-                            /<csp:title>.*?<\/csp:title>/,
-                            `<csp:title>${newTitle}</csp:title>`
-                        );
-
-                        fs.writeFileSync(uri.fsPath, newContent, 'utf-8');
+                        fs.writeFileSync(uri.fsPath, novoContent, { encoding: 'utf-8' });
                         outputChannel.appendLine(`[Emoji] Emoji set successfully: ${emoji}`);
                         vscode.window.showInformationMessage(`Emoji set successfully: ${emoji}`);
-                        panel.dispose();
                     } catch (e: any) {
                         outputChannel.appendLine(`[Emoji] Error setting emoji: ${e.message || e}`);
                         outputChannel.show(true);
                         vscode.window.showErrorMessage(`Error setting emoji: ${e.message || e}`);
+                    } finally {
+                        panel.dispose();
                     }
                 }
             },

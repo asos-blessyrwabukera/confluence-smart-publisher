@@ -60,7 +60,7 @@ coverage/
 src/test/
 
 # Arquivos documentação para testes
-*.confluence
+docs-for-testing/
 
 # Pacote da extensão
 *.vsix

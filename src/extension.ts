@@ -6,7 +6,7 @@ let outputChannel: vscode.OutputChannel;
 
 // This method is called when your extension is activated
 export function activate(context: vscode.ExtensionContext) {
-	outputChannel = vscode.window.createOutputChannel('CSP');
+	outputChannel = vscode.window.createOutputChannel('Confluence Smart Publisher');
 	context.subscriptions.push(outputChannel);
 	
 	// Exibir mensagem de ativação após toda a configuração
