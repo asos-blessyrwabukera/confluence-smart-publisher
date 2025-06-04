@@ -228,8 +228,8 @@ function numberHeadings(text: string): string {
     // Zera contadores de subníveis
     for (let i = level; i < counters.length; i++) {counters[i] = 0;}
     counters[level - 1]++;
-    // Prefixo esperado
-    const expectedPrefix = counters.slice(0, level).filter(n => n > 0).join('.') + ' ';
+    // Prefixo esperado com ponto no final
+    const expectedPrefix = counters.slice(0, level).filter(n => n > 0).join('.') + '. ';
     return `${spaces}<${tag}>${expectedPrefix}${content}</${tag}>`;
   });
 }

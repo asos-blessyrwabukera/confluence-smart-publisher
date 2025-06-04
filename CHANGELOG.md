@@ -4,7 +4,18 @@ All notable changes to the "confluence-smart-publisher" extension will be docume
 
 ## [0.0.6] - 2025-06-04
 - Some minor bug fixes
-- New Confluence Icon Theme 
+- Corrigida a numeração de capítulos
+- Altrado o formato da numeração
+
+**Antes**:
+>1 Título
+>1.1 Subtítulo
+>1.1.1 Sub-subtítulo
+
+**Depois**:
+>1. Título
+>1.1. Subtítulo
+>1.1.1. Sub-subtítulo
 
 ## [0.0.5] - 2025-06-02
 - Readme translated to English
