@@ -22,3 +22,7 @@ scripts/**
 **/.DS_Store
 **/Thumbs.db
 **/*.log
+*.vsix
+*.zip
+dist/**
+docs-for-testing/old_extension.ts
