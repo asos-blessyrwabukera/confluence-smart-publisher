@@ -7,6 +7,5 @@
 *.{ps1,[pP][sS]1} text eol=crlf
 
 # Arquivos de configuração específicos
-i18n/*.json text eol=lf
 .cursor/**/*.mdc text eol=lf
 *.mdc text eol=lf 

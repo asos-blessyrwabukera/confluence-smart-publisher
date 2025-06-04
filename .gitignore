@@ -61,3 +61,6 @@ src/test/
 
 # Arquivos documentação para testes
 *.confluence
+
+# Pacote da extensão
+*.vsix
