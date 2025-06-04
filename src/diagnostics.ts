@@ -34,8 +34,9 @@ export function registerDiagnostics(context: vscode.ExtensionContext, outputChan
     context.subscriptions.push(
         vscode.workspace.onDidChangeTextDocument(event => {
             if (event.document.languageId === 'xml' || event.document.fileName.endsWith('.confluence')) {
-                const diags = getUnclosedOrUnopenedTagDiagnostics(event.document.getText());
-                diagnostics.set(event.document.uri, diags);
+                const diags1 = getUnclosedOrUnopenedTagDiagnostics(event.document.getText());
+                const diags2 = getConfluenceDiagnostics(event.document.getText());
+                diagnostics.set(event.document.uri, [...diags1, ...diags2]);
             }
         })
     );

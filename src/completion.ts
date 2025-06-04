@@ -11,7 +11,7 @@ export function registerCompletionProviders(context: vscode.ExtensionContext, ou
     const allCustomTags = Object.keys(allowedTags);
     const tagCompletionProvider = vscode.languages.registerCompletionItemProvider('confluence', {
         provideCompletionItems(document, position) {
-            const line = document.lineAt(position).text.substr(0, position.character);
+            const line = document.lineAt(position).text.substring(0, position.character);
             // Suggestion when typing <
             if (line.endsWith('<')) {
                 return allCustomTags.map(tag => {
@@ -37,23 +37,24 @@ export function registerCompletionProviders(context: vscode.ExtensionContext, ou
                     } else {
                         snippet += '>$1';
                     }
-                    const item = new vscode.CompletionItem(tag, vscode.CompletionItemKind.Snippet);
+                    const item = new vscode.CompletionItem(tag, vscode.CompletionItemKind.Class);
                     item.insertText = new vscode.SnippetString(snippet + `</${tag}>`);
-                    item.detail = 'Custom Confluence tag';
-                    item.documentation = [
+                    item.detail = 'Confluence tag';
+                    const documentation = [
                         requiredAttrs.length > 0 ? `Required attributes: ${requiredAttrs.join(', ')}` : undefined,
                         optionalAttrs.length > 0 ? `Optional attributes: ${optionalAttrs.join(', ')}` : undefined,
-                        tag === 'csp:parameters' ? 'Automatically includes the required namespace.' : undefined
+                        tag === 'csp:parameters' ? 'Parameters namespace' : undefined
                     ].filter(Boolean).join('\n');
+                    item.documentation = new vscode.MarkdownString(documentation);
                     return item;
                 });
             }
             // Suggestion of closing when typing </
             if (line.endsWith('</')) {
                 return allCustomTags.map(tag => {
-                    const item = new vscode.CompletionItem(`/${tag}`, vscode.CompletionItemKind.Snippet);
+                    const item = new vscode.CompletionItem(`</${tag}>`, vscode.CompletionItemKind.Class);
                     item.insertText = `${tag}>`;
-                    item.detail = 'Close custom tag';
+                    item.detail = 'Close tag';
                     return item;
                 });
             }
@@ -72,7 +73,7 @@ export function registerCompletionProviders(context: vscode.ExtensionContext, ou
                         // Suggestion of allowed values for the attribute
                         const allowedKey = `${tag}@${attr}`;
                         if (allowedValues[allowedKey]) {
-                            item.documentation = 'Allowed values: ' + allowedValues[allowedKey].join(', ');
+                            item.documentation = new vscode.MarkdownString(`Allowed values: ${allowedValues[allowedKey].join(', ')}`);
                         }
                         return item;
                     });

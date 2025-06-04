@@ -24,8 +24,8 @@ export function getUnclosedOrUnopenedTagDiagnostics(text: string): vscode.Diagno
             textToPosition(text, match.index),
             textToPosition(text, match.index + full.length)
           ),
-          `Closing tag </${tag}> without corresponding opening tag`,
-          vscode.DiagnosticSeverity.Warning
+          'Tag ' + tag + ' is closing without being opened.',
+          vscode.DiagnosticSeverity.Error
         ));
       } else {
         openTags.splice(lastOpenIdx, 1);
@@ -42,8 +42,8 @@ export function getUnclosedOrUnopenedTagDiagnostics(text: string): vscode.Diagno
         textToPosition(text, open.index),
         textToPosition(text, open.index + length)
       ),
-      `Opening tag <${open.tag}> without corresponding closing tag`,
-      vscode.DiagnosticSeverity.Warning
+      'Tag ' + open.tag + ' is opened but never closed.',
+      vscode.DiagnosticSeverity.Error
     ));
   }
   return diagnostics;
@@ -96,7 +96,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
         // Não foi aberta antes
         diagnostics.push(new vscode.Diagnostic(
           new vscode.Range(pos.line, pos.char, pos.line, pos.char + full.length),
-          `Closing tag </${tag}> without corresponding opening tag`,
+          'Closing tag </' + tag + '> without corresponding opening tag',
           vscode.DiagnosticSeverity.Error
         ));
       } else {
@@ -109,7 +109,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
   for (const open of openTags) {
     diagnostics.push(new vscode.Diagnostic(
       new vscode.Range(open.line, open.char, open.line, open.char + open.tag.length + 2),
-      `Opening tag <${open.tag}> without corresponding closing tag`,
+      'Opening tag <' + open.tag + '> without corresponding closing tag',
       vscode.DiagnosticSeverity.Error
     ));
   }
@@ -128,7 +128,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
   }
 
   // Importações dinâmicas para evitar dependência circular
-  const { allowedTags, allowedValues, allowedHierarchy } = require('./confluenceSchema');
+  const { allowedTags, allowedHierarchy } = require('./confluenceSchema');
 
   function checkTagsCheerio(selector: string, parentSelector?: string) {
     $(selector).each((_: number, el: any) => {
@@ -140,7 +140,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
       if (!(tag in allowedTags)) {
         diagnostics.push(new vscode.Diagnostic(
           new vscode.Range(pos.line, pos.char, pos.line, pos.char + tag.length + 2),
-          `Not allowed tag: <${tag}>`,
+          'Not allowed tag: <' + tag + '>',
           vscode.DiagnosticSeverity.Error
         ));
       } else {
@@ -149,7 +149,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
           if (!$(el).attr(attr)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(pos.line, pos.char, pos.line, pos.char + tag.length + 2),
-              `Required attribute '${attr}' missing in <${tag}>`,
+              'Required attribute \'' + attr + '\' missing in <' + tag + '>',
               vscode.DiagnosticSeverity.Error
             ));
           }
@@ -160,7 +160,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
           if (parent && !allowedHierarchy[tag].includes(parent.tagName)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(pos.line, pos.char, pos.line, pos.char + tag.length + 2),
-              `<${tag}> must be inside ${allowedHierarchy[tag].map((p: string) => `<${p}>`).join(' or ')}`,
+              '<' + tag + '> must be inside ' + allowedHierarchy[tag].map((p: string) => '<' + p + '>').join(' or '),
               vscode.DiagnosticSeverity.Error
             ));
           }
@@ -266,7 +266,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
           if (!$(sectionEl).attr('type')) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(0, 0, 0, 1),
-              `<ac:layout-section> (position ${idx + 1}) must contain the required attribute 'type'.`,
+              '<ac:layout-section> (position ' + (idx + 1) + ') must contain the required attribute \'type\'.',
               vscode.DiagnosticSeverity.Error
             ));
           }
@@ -274,7 +274,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
           if (cells.length === 0) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(0, 0, 0, 1),
-              `<ac:layout-section> (position ${idx + 1}) must contain at least one <ac:layout-cell> as a child.`,
+              '<ac:layout-section> (position ' + (idx + 1) + ') must contain at least one <ac:layout-cell> as a child.',
               vscode.DiagnosticSeverity.Error
             ));
           } else {
@@ -282,14 +282,14 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
               if (!$(cellEl).attr('id')) {
                 diagnostics.push(new vscode.Diagnostic(
                   new vscode.Range(0, 0, 0, 1),
-                  `<ac:layout-cell> (position ${cidx + 1} of section ${idx + 1}) must contain the required attribute 'id'.`,
+                  '<ac:layout-cell> (position ' + (cidx + 1) + ' of section ' + (idx + 1) + ') must contain the required attribute \'id\'.',
                   vscode.DiagnosticSeverity.Error
                 ));
               }
               if (!$(cellEl).attr('style')) {
                 diagnostics.push(new vscode.Diagnostic(
                   new vscode.Range(0, 0, 0, 1),
-                  `<ac:layout-cell> (position ${cidx + 1} of section ${idx + 1}) must contain the required attribute 'style'.`,
+                  '<ac:layout-cell> (position ' + (cidx + 1) + ' of section ' + (idx + 1) + ') must contain the required attribute \'style\'.',
                   vscode.DiagnosticSeverity.Error
                 ));
               }

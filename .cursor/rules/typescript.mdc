@@ -10,10 +10,7 @@ Idioma
   - Comentários
   - Nomes de variáveis
   - Arquivos .md
-- APlique as Boas práticas para internacionalização:
-  - Evite concatenação de strings: Use marcadores de posição no formato: `vscode.l10n.t('confluence.error.fileNotFound', 'Arquivo não encontrado: {0}', filePath);`
-  - Padronize nomes de chaves: Use um padrão como área.tipo.descricão para facilitar a organização.
-  - Mantenha traduções atualizadas: Sempre que adicionar novas strings, atualize todos os arquivos de tradução.
+  - Outputs para o usuário
 
 Validação
 - Antes de implementa qualquer código, explique o que será feito e aguarde a minha confoirmação para seguir com a implementação.

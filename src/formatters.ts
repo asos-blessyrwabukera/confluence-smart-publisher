@@ -13,6 +13,7 @@ export function registerFormatters(context: vscode.ExtensionContext, outputChann
                 formatted = formatConfluenceDocument(text, numberChapters, outputChannel);
             } catch (e) {
                 // If error occurs, return original text
+                outputChannel.appendLine(`Error formatting file: ${e instanceof Error ? e.message : String(e)}`);
             }
             return [
                 vscode.TextEdit.replace(

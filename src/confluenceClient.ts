@@ -1,6 +1,6 @@
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
+import { workspace } from 'vscode';
+import { mkdirSync, writeFileSync, createReadStream, existsSync, readFileSync, promises as fsPromises } from 'fs';
+import { isAbsolute, join, dirname, basename, extname } from 'path';
 import FormData from 'form-data';
 // @ts-ignore
 import xmlEscape from 'xml-escape';
@@ -23,12 +23,12 @@ export class ConfluenceClient {
 
     constructor() {
         // Preferencialmente, use as configurações do VSCode para armazenar as credenciais
-        const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
+        const config = workspace.getConfiguration('confluenceSmartPublisher');
         this.baseUrl = (config.get('baseUrl') as string)?.replace(/\/$/, '') || '';
         this.username = config.get('username') as string || '';
         this.apiToken = config.get('apiToken') as string || '';
         if (!this.baseUrl || !this.username || !this.apiToken) {
-            throw new Error(vscode.l10n.t('confluence.error.configuration'));
+            throw new Error('Configure baseUrl, username and apiToken in the extension settings.');
         }
     }
 
@@ -64,7 +64,7 @@ export class ConfluenceClient {
         try {
             conteudo = page.body?.[formato]?.value;
             // Decodifica entidades HTML se o parâmetro estiver ativado
-            const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
+            const config = workspace.getConfiguration('confluenceSmartPublisher');
             if (config.get('htmlEntitiesDecode', false)) {
                 conteudo = decodeHtmlEntities(conteudo);
             }
@@ -75,15 +75,15 @@ export class ConfluenceClient {
         const tituloSanitizado = titulo.replace(/[\\/:*?"<>|]/g, '_');
         const fileName = `${tituloSanitizado}.confluence`;
         let baseDir: string;
-        if (path.isAbsolute(outputDir)) {
+        if (isAbsolute(outputDir)) {
             baseDir = outputDir;
         } else {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
+            const workspaceFolders = workspace.workspaceFolders;
             baseDir = workspaceFolders && workspaceFolders.length > 0 ? workspaceFolders[0].uri.fsPath : process.cwd();
-            baseDir = path.join(baseDir, outputDir);
+            baseDir = join(baseDir, outputDir);
         }
-        const filePath = path.join(baseDir, fileName);
-        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        const filePath = join(baseDir, fileName);
+        mkdirSync(dirname(filePath), { recursive: true });
 
         // Monta o bloco <csp:parameters>
         // 1. file_id
@@ -132,16 +132,16 @@ export class ConfluenceClient {
         }
         // Monta o bloco completo
         const cspBlock =
-`<csp:parameters xmlns:csp="https://confluence.smart.publisher/csp">\n` +
-`  <csp:file_id>${xmlEscape(String(fileId))}</csp:file_id>\n` +
-`  <csp:labels_list>${xmlEscape(labelsList)}</csp:labels_list>\n` +
-`  <csp:parent_id>${xmlEscape(String(parentId))}</csp:parent_id>\n` +
-    propertiesXml +
-`</csp:parameters>\n`;
+            `<csp:parameters xmlns:csp="https://confluence.smart.publisher/csp">\n` +
+            `  <csp:file_id>${xmlEscape(String(fileId))}</csp:file_id>\n` +
+            `  <csp:labels_list>${xmlEscape(labelsList)}</csp:labels_list>\n` +
+            `  <csp:parent_id>${xmlEscape(String(parentId))}</csp:parent_id>\n` +
+                propertiesXml +
+            `</csp:parameters>\n`;
 
         // Junta o bloco csp com o conteúdo da página
         let conteudoFinal = cspBlock + '\n' + conteudo;
-        fs.writeFileSync(filePath, conteudoFinal, { encoding: 'utf-8' });
+        writeFileSync(filePath, conteudoFinal, { encoding: 'utf-8' });
         return filePath;
     }
 
@@ -149,7 +149,7 @@ export class ConfluenceClient {
         const { default: fetch } = await import('node-fetch');
         // Descobre a base da URL para API v1
         let baseUrlV1 = this.baseUrl.includes('/api/v2') ? this.baseUrl.split('/api/v2')[0] : this.baseUrl;
-        const fileName = path.basename(filePath);
+        const fileName = basename(filePath);
         // Verifica se o anexo já existe
         const checkUrl = `${baseUrlV1}/rest/api/content/${pageId}/child/attachment?filename=${encodeURIComponent(fileName)}`;
         let resp = await fetch(checkUrl, { headers: this.getAuthHeader() });
@@ -162,7 +162,7 @@ export class ConfluenceClient {
         // Upload
         const url = `${baseUrlV1}/rest/api/content/${pageId}/child/attachment`;
         const form = new FormData();
-        form.append('file', fs.createReadStream(filePath), fileName);
+        form.append('file', createReadStream(filePath), fileName);
         resp = await fetch(url, {
             method: 'POST',
             headers: { ...this.getAuthHeader(), 'X-Atlassian-Token': 'no-check' },
@@ -184,8 +184,8 @@ export class ConfluenceClient {
             if (src.startsWith('http://') || src.startsWith('https://')) {
                 return match; // Não altera URLs absolutas
             }
-            const imgPath = path.join(baseDir, src);
-            if (!fs.existsSync(imgPath)) {
+            const imgPath = join(baseDir, src);
+            if (!existsSync(imgPath)) {
                 return match; // Não altera se não encontrar
             }
             const anexoUrl = await this.uploadAttachment(pageId, imgPath);
@@ -213,8 +213,8 @@ export class ConfluenceClient {
         while ((matchArr = acImageRegex.exec(content)) !== null) {
             acResult += content.slice(lastIndex, matchArr.index);
             const filename = matchArr[1];
-            const imgPath = path.join(baseDir, filename);
-            if (fs.existsSync(imgPath)) {
+            const imgPath = join(baseDir, filename);
+            if (existsSync(imgPath)) {
                 await this.uploadAttachment(pageId, imgPath);
             }
             acResult += matchArr[0];
@@ -304,10 +304,10 @@ export class ConfluenceClient {
     }
 
     async createPageFromFile(filePath: string): Promise<any> {
-        const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
-        const pasta = path.dirname(filePath);
-        const parentFile = path.join(pasta, '.parent');
-        let content = fs.readFileSync(filePath, 'utf-8');
+        const config = workspace.getConfiguration('confluenceSmartPublisher');
+        const pasta = dirname(filePath);
+        const parentFile = join(pasta, '.parent');
+        let content = readFileSync(filePath, 'utf-8');
 
         content = content.replace(/\n +/g, '\n');
 
@@ -327,7 +327,7 @@ export class ConfluenceClient {
         const spaceId = parentPage.spaceId;
 
         // Título
-        const titleBase = path.basename(filePath, path.extname(filePath));
+        const titleBase = basename(filePath, extname(filePath));
         let cardJiraId: string | null = null;
         const match = content.match(/<h1>Card Jira<\/h1>\s*<a [^>]*href="[^"]+\/browse\/([A-Z]+-\d+)/);
         if (match) {
@@ -359,7 +359,7 @@ export class ConfluenceClient {
         const pageId = pageData.id;
         // Processa imagens locais e atualiza o conteúdo se necessário
         if (pageId) {
-            const pasta = path.dirname(filePath);
+            const pasta = dirname(filePath);
             const contentWithImages = await this._processImagesInContent(contentToSend, pageId, pasta);
             if (contentWithImages !== contentToSend) {
                 // Atualiza a página com o novo conteúdo
@@ -391,8 +391,8 @@ export class ConfluenceClient {
     }
 
     async updatePageFromFile(filePath: string): Promise<any> {
-        const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
-        let content = fs.readFileSync(filePath, 'utf-8');
+        const config = workspace.getConfiguration('confluenceSmartPublisher');
+        let content = readFileSync(filePath, 'utf-8');
 
         content = content.replace(/\n +/g, '\n');
         const match = content.match(/<csp:file_id>(.*?)<\/csp:file_id>/);
@@ -401,7 +401,7 @@ export class ConfluenceClient {
         if (!/^\d+$/.test(pageId)) {throw new Error(`Invalid page ID in <csp:file_id> tag: ${pageId}`);}
         let contentToSend = content.replace(/<csp:parameters[\s\S]*?<\/csp:parameters>\s*/g, '');
 
-        const pasta = path.dirname(filePath);
+        const pasta = dirname(filePath);
         contentToSend = await this._processImagesInContent(contentToSend, pageId, pasta);
         const page = await this.getPageById(pageId);
         if (!page) {throw new Error(`Page with ID ${pageId} not found.`);}
@@ -490,21 +490,110 @@ export class ConfluenceClient {
 }
 
 export async function publishConfluenceFile(filePath: string) {
-    const fsPromises = fs.promises;
     function extractFileId(conteudo: string): string | null {
         const regex = /<csp:file_id>(\d+)<\/csp:file_id>/;
         const match = conteudo.match(regex);
         return match ? match[1] : null;
     }
+
     async function insertFileIdInFile(filePath: string, fileId: string) {
         let conteudo = await fsPromises.readFile(filePath, 'utf-8');
-        conteudo = conteudo.replace(/<csp:file_id>.*?<\/csp:file_id>\s*/s, '');
-        conteudo = `<csp:file_id>${fileId}</csp:file_id>\n` + conteudo;
+        
+        // Verifica se existe a estrutura do CSP
+        const cspRegex = /<csp:parameters[\s\S]*?<\/csp:parameters>/;
+        const cspMatch = conteudo.match(cspRegex);
+        
+        if (cspMatch) {
+            // Se existe a estrutura do CSP, remove a tag file_id existente e insere a nova
+            conteudo = conteudo.replace(/<csp:file_id>.*?<\/csp:file_id>\s*/s, '');
+            const cspContent = cspMatch[0];
+            const newCspContent = cspContent.replace(
+                /<csp:parameters[^>]*>/,
+                `$&<csp:file_id>${fileId}</csp:file_id>\n`
+            );
+            conteudo = conteudo.replace(cspRegex, newCspContent);
+        } else {
+            // Se não existe a estrutura do CSP, cria uma nova
+            const cspBlock = `<csp:parameters xmlns:csp="https://confluence.smart.publisher/csp">\n` +
+                `  <csp:file_id>${fileId}</csp:file_id>\n` +
+                `  <csp:labels_list></csp:labels_list>\n` +
+                `  <csp:parent_id></csp:parent_id>\n` +
+                `  <csp:properties>\n` +
+                `    <csp:key>content-appearance-published</csp:key>\n` +
+                `    <csp:value>fixed-width</csp:value>\n` +
+                `    <csp:key>content-appearance-draft</csp:key>\n` +
+                `    <csp:value>fixed-width</csp:value>\n` +
+                `  </csp:properties>\n` +
+                `</csp:parameters>\n\n`;
+            conteudo = cspBlock + conteudo;
+        }
+        
         await fsPromises.writeFile(filePath, conteudo, { encoding: 'utf-8' });
     }
-    if (!fs.existsSync(filePath)) {
+
+    async function updatePropertiesInFile(filePath: string) {
+        let conteudo = await fsPromises.readFile(filePath, 'utf-8');
+        const cspRegex = /<csp:parameters[\s\S]*?<\/csp:parameters>/;
+        const cspMatch = conteudo.match(cspRegex);
+        
+        if (cspMatch) {
+            const cspContent = cspMatch[0];
+            const propertiesRegex = /<csp:properties>[\s\S]*?<\/csp:properties>/;
+            const propertiesMatch = cspContent.match(propertiesRegex);
+            
+            if (propertiesMatch) {
+                // Verifica se as propriedades já existem
+                let propertiesContent = propertiesMatch[0];
+                const requiredProperties = [
+                    { key: 'content-appearance-published', value: 'fixed-width' },
+                    { key: 'content-appearance-draft', value: 'fixed-width' }
+                ];
+                
+                let hasChanges = false;
+                for (const prop of requiredProperties) {
+                    const keyRegex = new RegExp(`<csp:key>${prop.key}</csp:key>\\s*<csp:value>([^<]*)</csp:value>`);
+                    const keyMatch = propertiesContent.match(keyRegex);
+                    
+                    if (!keyMatch) {
+                        // Se a propriedade não existe, adiciona ela
+                        hasChanges = true;
+                        propertiesContent = propertiesContent.replace(
+                            '</csp:properties>',
+                            `    <csp:key>${prop.key}</csp:key>\n    <csp:value>${prop.value}</csp:value>\n  </csp:properties>`
+                        );
+                    }
+                    // Se a propriedade já existe, mantém o valor original
+                }
+                
+                // Atualiza o conteúdo do arquivo apenas se houver mudanças
+                if (hasChanges) {
+                    conteudo = conteudo.replace(propertiesRegex, propertiesContent);
+                    await fsPromises.writeFile(filePath, conteudo, { encoding: 'utf-8' });
+                }
+            } else {
+                // Adiciona o bloco de propriedades se não existir
+                const newProperties = `  <csp:properties>\n` +
+                    `    <csp:key>content-appearance-published</csp:key>\n` +
+                    `    <csp:value>fixed-width</csp:value>\n` +
+                    `    <csp:key>content-appearance-draft</csp:key>\n` +
+                    `    <csp:value>fixed-width</csp:value>\n` +
+                    `  </csp:properties>\n`;
+                conteudo = conteudo.replace(
+                    /<csp:parameters[^>]*>/,
+                    `$&${newProperties}`
+                );
+                await fsPromises.writeFile(filePath, conteudo, { encoding: 'utf-8' });
+            }
+        }
+    }
+
+    if (!existsSync(filePath)) {
         throw new Error(`File not found: ${filePath}`);
     }
+
+    // Atualiza as propriedades no arquivo local antes da publicação
+    await updatePropertiesInFile(filePath);
+
     let conteudo = await fsPromises.readFile(filePath, 'utf-8');
     const fileId = extractFileId(conteudo);
     const client = new ConfluenceClient();
@@ -519,11 +608,5 @@ export async function publishConfluenceFile(filePath: string) {
         if (!pageId) {throw new Error('Could not get the ID of the created page.');}
         await insertFileIdInFile(filePath, pageId);
     }
-    // Adiciona labels obrigatórias
-    const labels = ['user-story', 'escopo', 'pendente'];
-    await client.setPageLabels(pageId, labels);
-    // Atualiza propriedades obrigatórias
-    await client.updateContentProperty(pageId, 'content-appearance-published', 'fixed-width');
-    await client.updateContentProperty(pageId, 'content-appearance-draft', 'fixed-width');
     return { pageId, resposta };
 } 

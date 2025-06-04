@@ -45,11 +45,19 @@ function formatHtmlLike(text: string): string {
       
       // TAG DE ABERTURA INLINE
       if (!isClosing && !isSelfClosing && isInline) {
+        // Tratamento especial para tags h1-h6
+        if (/^h[1-6]$/.test(tagName)) {
+          result += '\n' + '  '.repeat(indent) + token.trim();
+          if (!isSelfClosing) {
+            tagStack.push({ tagName, isInline: true });
+          }
+          lastTagType = 'open-inline';
+          continue;
+        }
+
         if (lastTagType === 'open-block' || lastTagType === 'close-inline' || lastTagType === 'close-block' || lastTagType === 'text' || lastTagType === 'none') {
-          // Sempre quebra linha, exceto se anterior era open-inline
           result += '\n' + '  '.repeat(indent) + token.trim();
         } else {
-          // anterior era open-inline: NÃO quebra linha
           result += token.trim();
         }
         if (!isSelfClosing) {
@@ -62,11 +70,9 @@ function formatHtmlLike(text: string): string {
       
       // TAG DE ABERTURA BLOCK
       if (!isClosing && !isSelfClosing && isBlock) {
-        // Se a tag anterior for uma abertura de tag inline, não quebra linha
         if (lastTagType === 'open-inline') {
           result += token.trim();
         } else {
-          // Caso contrário, adiciona quebra de linha normalmente
           result += '\n' + '  '.repeat(indent) + token.trim();
         }
         
@@ -81,17 +87,21 @@ function formatHtmlLike(text: string): string {
       // TAG DE FECHAMENTO
       if (isClosing) {
         indent = Math.max(indent - 1, 0);
-        // Remove a última tag da pilha
         if (tagStack.length > 0) {tagStack.pop();}
         
-        // Verifica se após remover a tag atual, ainda estamos dentro de uma tag inline
         const stillInsideInlineTag = tagStack.length > 0 && tagStack[tagStack.length - 1].isInline;
         
+        // Tratamento especial para tags h1-h6
+        if (/^h[1-6]$/.test(tagName)) {
+          result += token.trim() + '\n';
+          lastTagType = 'close-block';
+          continue;
+        }
+
         if (isInline) {
           result += token.trim();
           lastTagType = 'close-inline';
         } else {
-          // Tags block de fechamento sempre devem ter quebra de linha
           result += '\n' + '  '.repeat(indent) + token.trim();
           lastTagType = 'close-block';
         }
@@ -112,7 +122,6 @@ function formatHtmlLike(text: string): string {
         if (lastTagType === 'open-inline') {
           result += textContent;
         } else {
-          // Verifica se estamos dentro de uma tag inline para não adicionar quebra de linha
           const insideInlineTag = tagStack.length > 0 && tagStack[tagStack.length - 1].isInline;
           if (insideInlineTag) {
             result += textContent;
@@ -202,8 +211,12 @@ export function formatConfluenceDocument(text: string, numberChapters: boolean =
     formatted = formatted.replace(/\n{3,}/g, '\n\n');
     return formatted;
   } catch (e) {
-    vscode.window.showErrorMessage('Error formatting document: ' + (e instanceof Error ? e.message : String(e)));
-    return text;
+    if (outputChannel) {
+      outputChannel.appendLine(`Error formatting file: ${e instanceof Error ? e.message : String(e)}`);
+    }else{
+      vscode.window.showErrorMessage(`Error formatting file: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    throw e;
   }
 }
 
@@ -211,7 +224,7 @@ function numberHeadings(text: string): string {
   // Numera h1-h6 sequencialmente, reiniciando a contagem para subníveis
   const headingRegex = /([ \t]*)<(h[1-6])>([\s\S]*?)<\/\2>/gi;
   const counters = [0, 0, 0, 0, 0, 0];
-  return text.replace(headingRegex, (match, spaces, tag, content) => {
+  return text.replace(headingRegex, (spaces, tag, content) => {
     const level = parseInt(tag[1]);
     // Zera contadores de subníveis
     for (let i = level; i < counters.length; i++) {counters[i] = 0;}
