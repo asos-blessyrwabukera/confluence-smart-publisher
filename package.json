@@ -1,8 +1,8 @@
 {
   "name": "confluence-smart-publisher",
-  "displayName": "Confluence-Smart-Publisher",
-  "description": "Easily publish pages to Confluence directly from your VSCode",
-  "version": "1.0.0",
+  "displayName": "Confluence Smart Publisher",
+  "description": "Publish and manage Confluence pages directly from VS Code",
+  "version": "0.0.6",
   "icon": "images/csp-icon.png",
   "engines": {
     "vscode": "^1.96.0"
@@ -10,44 +10,45 @@
   "categories": [
     "Other"
   ],
-  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "confluence-smart-publisher.publishConfluence",
-        "title": "%confluence.commands.publish%"
+        "title": "Publish Document"
       },
       {
         "command": "confluence-smart-publisher.getPageByTitle",
-        "title": "%confluence.commands.getByTitle%"
+        "title": "Download Document by Title"
       },
       {
         "command": "confluence-smart-publisher.getPageById",
-        "title": "%confluence.commands.getById%"
+        "title": "Download Document by ID"
       },
       {
         "command": "confluence-smart-publisher.createPage",
-        "title": "%confluence.commands.createPage%"
+        "title": "Create Document"
       },
       {
         "command": "confluence-smart-publisher.formatConfluence",
-        "title": "%confluence.commands.formatDoc%"
+        "title": "Format Document"
       },
       {
         "command": "confluence-smart-publisher.diffWithPublished",
-        "title": "%confluence.commands.diffWithPublished%"
+        "title": "Compare Local Document with Published"
       },
       {
         "command": "confluence-smart-publisher.syncWithPublished",
-        "title": "%confluence.commands.syncWithPublished%"
+        "title": "Sync with Published on Confluence"
       },
       {
         "command": "confluence-smart-publisher.setEmojiTitle",
-        "title": "%confluence.commands.setEmojiTitle%"
+        "title": "Set Title Emoji"
       },
       {
         "command": "confluence-smart-publisher.decodeHtml",
-        "title": "%confluence.commands.decodeHtml%"
+        "title": "Decode HTML Entities"
       }
     ],
     "submenus": [
@@ -109,33 +110,29 @@
         "confluenceSmartPublisher.baseUrl": {
           "type": "string",
           "default": "",
-          "description": "%confluence.config.baseUrl%"
+          "description": "Base URL of your Confluence instance (e.g., https://company.atlassian.net/wiki)"
         },
         "confluenceSmartPublisher.username": {
           "type": "string",
           "default": "",
-          "description": "%confluence.config.username%"
+          "description": "Confluence username (usually email)"
         },
         "confluenceSmartPublisher.apiToken": {
           "type": "string",
           "default": "",
-          "description": "%confluence.config.apiToken%"
+          "description": "Confluence API Token (generate at https://id.atlassian.com/manage-profile/security/api-tokens)"
         },
         "confluenceSmartPublisher.format.numberChapters": {
           "type": "boolean",
           "default": true,
-          "description": "%confluence.config.format.numberChapters%"
+          "description": "Automatically number chapters when formatting .confluence document"
         },
         "confluenceSmartPublisher.htmlEntitiesDecode": {
           "type": "boolean",
           "default": false,
-          "description": "%confluence.config.htmlEntitiesDecode%"
+          "description": "Decode HTML entities when downloading Confluence files."
         }
       }
-    },
-    "l10n": {
-      "pt-br": "./i18n/pt-br.json",
-      "en": "./i18n/en.json"
     },
     "languages": [
       {
@@ -165,39 +162,47 @@
         "language": "confluence",
         "path": "./confluence-storage.code-snippets"
       }
+    ],
+    "iconThemes": [
+      {
+        "id": "confluence-icon-theme",
+        "label": "Confluence Icon Theme",
+        "path": "./icon-theme.json"
+      }
     ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
-    "compile": "npm run check-types && npm run lint && node esbuild.js",
-    "watch": "npm-run-all -p watch:*",
-    "watch:esbuild": "node esbuild.js --watch",
-    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "check-types": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vscode-test"
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
     "@types/node": "20.x",
-    "@types/vscode": "^1.96.0",
-    "@typescript-eslint/eslint-plugin": "^8.31.1",
-    "@typescript-eslint/parser": "^8.31.1",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.5.2",
-    "esbuild": "^0.25.3",
-    "eslint": "^9.25.1",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.8.3"
+    "@types/node-fetch": "^2.6.12",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vscode/test-electron": "^2.3.8",
+    "eslint": "^8.56.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
     "entities": "^6.0.0",
-    "fast-xml-parser": "^5.2.3",
-    "form-data": "^4.0.2",
+    "form-data": "^4.0.0",
     "node-fetch": "^2.7.0",
     "xml-escape": "^1.1.0"
   },
@@ -205,6 +210,5 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/antoniocarelli/confluence-smart-publisher"
-  },
-  "activationEvents": []
+  }
 }

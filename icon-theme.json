@@ -1,0 +1,13 @@
+{
+  "iconDefinitions": {
+    "_file_confluence": {
+      "iconPath": "./icons/confluence.svg"
+    }
+  },
+  "fileExtensions": {
+    "confluence": "_file_confluence"
+  },
+  "languageIds": {
+    "confluence": "_file_confluence"
+  }
+} 
