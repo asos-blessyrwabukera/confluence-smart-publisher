@@ -2,20 +2,26 @@
 
 All notable changes to the "confluence-smart-publisher" extension will be documented in this file.
 
+## [0.0.7] - 2025-06-05
+- Removed the "Compare Local Document with Published" command (diffWithPublished) to simplify the interface
+- Kept only the "Sync with Published on Confluence" command which already includes the comparison functionality
+- Bugfix in the page title emoji definition command
+
 ## [0.0.6] - 2025-06-04
 - Some minor bug fixes
-- Corrigida a numeração de capítulos
-- Altrado o formato da numeração
+- Fixed chapter numbering
+- Changed the numbering format
 
-**Antes**:
->1 Título
->1.1 Subtítulo
->1.1.1 Sub-subtítulo
+**Before**:
 
-**Depois**:
->1. Título
->1.1. Subtítulo
->1.1.1. Sub-subtítulo
+> 1 Title
+> 1.1 Subtitle
+> 1.1.1 Sub-subtitle
+
+**After**:
+> 1. Title
+> 1.1. Subtitle
+> 1.1.1. Sub-subtitle
 
 ## [0.0.5] - 2025-06-02
 - Readme translated to English

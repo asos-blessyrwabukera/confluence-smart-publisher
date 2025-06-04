@@ -186,72 +186,6 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
         }
     });
 
-    // Command to compare local with published version
-    const diffWithPublishedCmd = vscode.commands.registerCommand('confluence-smart-publisher.diffWithPublished', async (uri: vscode.Uri) => {
-        if (!uri || !uri.fsPath.endsWith('.confluence')) {
-            vscode.window.showErrorMessage('Select a .confluence file to compare.');
-            return;
-        }
-        const fs = await import('fs');
-        let fileId = '';
-        try {
-            const content = fs.readFileSync(uri.fsPath, 'utf-8');
-            const match = content.match(/<csp:file_id>(\d+)<\/csp:file_id>/);
-            if (match) {
-                fileId = match[1];
-            }
-        } catch (e) {}
-
-        if (!fileId) {
-            const input = await vscode.window.showInputBox({ prompt: 'Enter the Confluence Page ID to compare', ignoreFocusOut: true });
-            if (!input) {
-                vscode.window.showWarningMessage('Page ID not provided.');
-                return;
-            }
-            fileId = input;
-        }
-
-        try {
-            await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: 'Downloading published version from Confluence...',
-                cancellable: false
-            }, async () => {
-                outputChannel.appendLine(`[Diff] Comparing local file with published. fileId=${fileId}`);
-                const client = new ConfluenceClient();
-                const temp = require('os').tmpdir();
-                const fs = await import('fs');
-                const path = await import('path');
-                const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
-                const numberChapters = config.get('format.numberChapters', false);
-                // Baixa o arquivo publicado
-                const publishedPath = await client.downloadConfluencePage(fileId, BodyFormat.STORAGE, temp);
-
-                // Lê e formata o conteúdo local
-                const localContent = fs.readFileSync(uri.fsPath, 'utf-8');
-                const formattedLocal = formatConfluenceDocument(localContent, numberChapters);
-                const formattedLocalPath = path.join(temp, 'local_formatted_' + path.basename(uri.fsPath));
-                fs.writeFileSync(formattedLocalPath, formattedLocal, { encoding: 'utf-8' });
-
-                // Lê e formata o conteúdo publicado
-                const publishedContent = fs.readFileSync(publishedPath, 'utf-8');
-                const formattedPublished = formatConfluenceDocument(publishedContent, numberChapters);
-                const formattedPublishedPath = path.join(temp, 'published_formatted_' + path.basename(publishedPath));
-                fs.writeFileSync(formattedPublishedPath, formattedPublished, { encoding: 'utf-8' });
-
-                outputChannel.appendLine(`[Diff] Formatted files ready for diff.`);
-                const leftUri = vscode.Uri.file(formattedLocalPath);
-                const rightUri = vscode.Uri.file(formattedPublishedPath);
-                const title = `Diff: Local (formatted) ↔ Published (formatted) (${fileId})`;
-                await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, title);
-            });
-        } catch (e: any) {
-            outputChannel.appendLine(`[Diff] Error comparing: ${e.message || e}`);
-            outputChannel.show(true);
-            vscode.window.showErrorMessage(`Error comparing: ${e.message || e}`);
-        }
-    });
-
     // Command to sync with published version
     const syncWithPublishedCmd = vscode.commands.registerCommand('confluence-smart-publisher.syncWithPublished', async (uri: vscode.Uri) => {
         if (!uri || !uri.fsPath.endsWith('.confluence')) {
@@ -466,7 +400,6 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
         getPageByIdCmd,
         createPageCmd,
         formatConfluenceCmd,
-        diffWithPublishedCmd,
         syncWithPublishedCmd,
         setEmojiTitleCmd,
         decodeHtmlCmd

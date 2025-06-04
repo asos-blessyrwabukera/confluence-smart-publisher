@@ -2,7 +2,7 @@
   "name": "confluence-smart-publisher",
   "displayName": "Confluence Smart Publisher",
   "description": "Publish and manage Confluence pages directly from VS Code",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "icon": "images/csp-icon.png",
   "engines": {
     "vscode": "^1.96.0"
@@ -33,10 +33,6 @@
       {
         "command": "confluence-smart-publisher.formatConfluence",
         "title": "Format Document"
-      },
-      {
-        "command": "confluence-smart-publisher.diffWithPublished",
-        "title": "Compare Local Document with Published"
       },
       {
         "command": "confluence-smart-publisher.syncWithPublished",
@@ -84,10 +80,6 @@
         },
         {
           "command": "confluence-smart-publisher.formatConfluence",
-          "when": "resourceExtname == .confluence"
-        },
-        {
-          "command": "confluence-smart-publisher.diffWithPublished",
           "when": "resourceExtname == .confluence"
         },
         {

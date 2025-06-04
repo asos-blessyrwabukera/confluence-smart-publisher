@@ -1,6 +1,6 @@
 # 🚀 Confluence Smart Publisher
 
-Visual Studio Code extension that allows you to create, edit, publish, download, compare, and synchronize Confluence pages directly from your editor, using `.confluence` files in a custom XML format named Confluence Storage Format.
+Visual Studio Code extension that allows you to create, edit, publish, download, and synchronize Confluence pages directly from your editor, using `.confluence` files in a custom XML format named Confluence Storage Format.
 
 ## 📋 Table of Contents
 
