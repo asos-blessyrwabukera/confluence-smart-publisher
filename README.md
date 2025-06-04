@@ -77,17 +77,6 @@ The **Publish Document** command (`publishConfluence`) executes a series of step
    - Displays a success message with the ID of the published page or an error message if something fails.
 >Note: The entire flow is executed transparently, with logs in the "Output | CSP" panel of VSCode to facilitate diagnosis in case of problems.
 
-### 🎨 Icon Theme
-- **Confluence Icon Theme**: Ícone personalizado para arquivos `.confluence` usando o logo oficial do Confluence.
-  - Facilita a identificação de arquivos `.confluence` no explorador
-  - Compatível com outros temas de ícones
-  - Não interfere com as configurações de ícones existentes
-
-> Para ativar o tema de ícones:
-> 1. Abra o VS Code
-> 2. Vá em "File > Preferences > File Icon Theme"
-> 3. Selecione "Confluence Icon Theme"
-
 
 ### 🔄 UNIQUE FEATURE: Metadata synchronization!
 

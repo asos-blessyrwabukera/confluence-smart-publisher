@@ -162,13 +162,6 @@
         "language": "confluence",
         "path": "./confluence-storage.code-snippets"
       }
-    ],
-    "iconThemes": [
-      {
-        "id": "confluence-icon-theme",
-        "label": "Confluence Icon Theme",
-        "path": "./icon-theme.json"
-      }
     ]
   },
   "scripts": {
