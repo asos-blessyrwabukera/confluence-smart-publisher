@@ -1,7 +1,7 @@
 ---
 description: 
-globs: 
-alwaysApply: true
+globs: *.ts
+alwaysApply: false
 ---
 Guideline TypeScript para Projetos Node.js/Extensões VS Code
 
@@ -9,7 +9,6 @@ Idioma
 - Utilize o idioma inglês para:
   - Comentários
   - Nomes de variáveis
-  - Arquivos .md
   - Outputs para o usuário
 
 Validação
