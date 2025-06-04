@@ -2,51 +2,54 @@ import * as vscode from 'vscode';
 import { getUnclosedOrUnopenedTagDiagnostics, getConfluenceDiagnostics } from './confluenceValidator';
 
 export function registerDiagnostics(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
-    const diagnostics = vscode.languages.createDiagnosticCollection('confluence');
-    context.subscriptions.push(diagnostics);
+    // Criar uma coleção de diagnósticos
+    const diagnosticCollection = vscode.languages.createDiagnosticCollection('confluence');
+    context.subscriptions.push(diagnosticCollection);
 
     function updateDiagnostics(document: vscode.TextDocument) {
-        if (document.languageId === 'xml' || document.fileName.endsWith('.confluence')) {
-            const diags1 = getUnclosedOrUnopenedTagDiagnostics(document.getText());
-            const diags2 = getConfluenceDiagnostics(document.getText());
-            diagnostics.set(document.uri, [...diags1, ...diags2]);
+        if (document.languageId === 'confluence' || document.languageId === 'xml' || document.fileName.endsWith('.confluence')) {
+            const text = document.getText();
+            const diags1 = getUnclosedOrUnopenedTagDiagnostics(text);
+            const diags2 = getConfluenceDiagnostics(text);
+            const allDiags = [...diags1, ...diags2];
+            diagnosticCollection.set(document.uri, allDiags);
+        } else {
+            diagnosticCollection.delete(document.uri);
         }
     }
 
-    // Update diagnostics when opening
-    context.subscriptions.push(
-        vscode.workspace.onDidOpenTextDocument(updateDiagnostics)
-    );
+    // Verificar documentos já abertos
+    vscode.workspace.textDocuments.forEach(doc => {
+        updateDiagnostics(doc);
+    });
 
-    // Update diagnostics when changing active editor
-    context.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor(editor => {
-            if (editor) {updateDiagnostics(editor.document);}
-        })
-    );
-
-    // Update diagnostics when saving
-    context.subscriptions.push(
-        vscode.workspace.onDidSaveTextDocument(updateDiagnostics)
-    );
-
-    // Update diagnostics when editing document (while typing)
+    // Atualizar diagnósticos quando o documento muda
     context.subscriptions.push(
         vscode.workspace.onDidChangeTextDocument(event => {
-            if (event.document.languageId === 'xml' || event.document.fileName.endsWith('.confluence')) {
-                const diags1 = getUnclosedOrUnopenedTagDiagnostics(event.document.getText());
-                const diags2 = getConfluenceDiagnostics(event.document.getText());
-                diagnostics.set(event.document.uri, [...diags1, ...diags2]);
+            updateDiagnostics(event.document);
+        })
+    );
+
+    // Atualizar diagnósticos quando o documento é salvo
+    context.subscriptions.push(
+        vscode.workspace.onDidSaveTextDocument(document => {
+            updateDiagnostics(document);
+        })
+    );
+
+    // Atualizar diagnósticos quando o editor ativo muda
+    context.subscriptions.push(
+        vscode.window.onDidChangeActiveTextEditor(editor => {
+            if (editor) {
+                updateDiagnostics(editor.document);
             }
         })
     );
 
-    // Remove diagnostics when deleting files
+    // Limpar diagnósticos quando o documento é fechado
     context.subscriptions.push(
-        vscode.workspace.onDidDeleteFiles(event => {
-            for (const file of event.files) {
-                diagnostics.delete(file);
-            }
+        vscode.workspace.onDidCloseTextDocument(document => {
+            diagnosticCollection.delete(document.uri);
         })
     );
 } 

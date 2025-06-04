@@ -8,22 +8,25 @@ export function getUnclosedOrUnopenedTagDiagnostics(text: string): vscode.Diagno
   const openTags: { tag: string, index: number }[] = [];
   const tagRegex = /<\/?([\w:-]+)[^>]*?>/g;
   let match;
+  
   while ((match = tagRegex.exec(text)) !== null) {
     const [full, tag] = match;
+    
     const isClosing = full.startsWith('</');
-    const isSelfClosing = /\/>$/.test(full);
+    const isSelfClosing = /\/\s*>$/.test(full) || /\/$/.test(full);
+    
     if (!isClosing && !isSelfClosing) {
-      // Tag de abertura (não self-closing)
       openTags.push({ tag, index: match.index });
     } else if (isClosing) {
       const lastOpenIdx = openTags.map(t => t.tag).lastIndexOf(tag);
       if (lastOpenIdx === -1) {
-        // Tag de fechamento sem abertura
+        const range = new vscode.Range(
+          textToPosition(text, match.index),
+          textToPosition(text, match.index + full.length)
+        );
+        
         diagnostics.push(new vscode.Diagnostic(
-          new vscode.Range(
-            textToPosition(text, match.index),
-            textToPosition(text, match.index + full.length)
-          ),
+          range,
           'Tag ' + tag + ' is closing without being opened.',
           vscode.DiagnosticSeverity.Error
         ));
@@ -31,21 +34,24 @@ export function getUnclosedOrUnopenedTagDiagnostics(text: string): vscode.Diagno
         openTags.splice(lastOpenIdx, 1);
       }
     }
-    // Tags self-closing são ignoradas
   }
-  // O que sobrou na pilha são tags não fechadas
+  
   for (const open of openTags) {
     const tagMatch = text.slice(open.index).match(/<\/?[\w:-]+[^>]*?>/);
     const length = tagMatch ? tagMatch[0].length : open.tag.length;
+    
+    const range = new vscode.Range(
+      textToPosition(text, open.index),
+      textToPosition(text, open.index + length)
+    );
+    
     diagnostics.push(new vscode.Diagnostic(
-      new vscode.Range(
-        textToPosition(text, open.index),
-        textToPosition(text, open.index + length)
-      ),
-      'Tag ' + open.tag + ' is opened but never closed.',
+      range,
+      'Opening tag <' + open.tag + '> without corresponding closing tag',
       vscode.DiagnosticSeverity.Error
     ));
   }
+  
   return diagnostics;
 }
 
@@ -63,11 +69,7 @@ function textToPosition(text: string, index: number): vscode.Position {
  */
 export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
   const diagnostics: vscode.Diagnostic[] = [];
-  // Pilha para rastrear tags abertas
-  const openTags: { tag: string, index: number, line: number, char: number }[] = [];
-  // Regex para encontrar tags
-  const tagRegex = /<\/?([\w:-]+)[^>]*?>/g;
-  let match;
+  
   // Para mapear índice para linha/coluna
   const lines = text.split(/\r?\n/);
   // Função para achar linha/coluna a partir do índice
@@ -81,43 +83,19 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
     }
     return { line: lines.length - 1, char: lines[lines.length - 1].length };
   }
-  while ((match = tagRegex.exec(text)) !== null) {
-    const [full, tag] = match;
-    const isClosing = full.startsWith('</');
-    const isSelfClosing = /\/$/.test(full);
-    const pos = getLineCol(match.index);
-    if (!isClosing && !isSelfClosing) {
-      // Tag de abertura (não self-closing)
-      openTags.push({ tag, index: match.index, line: pos.line, char: pos.char });
-    } else if (isClosing) {
-      // Tag de fechamento
-      const lastOpenIdx = openTags.map(t => t.tag).lastIndexOf(tag);
-      if (lastOpenIdx === -1) {
-        // Não foi aberta antes
-        diagnostics.push(new vscode.Diagnostic(
-          new vscode.Range(pos.line, pos.char, pos.line, pos.char + full.length),
-          'Closing tag </' + tag + '> without corresponding opening tag',
-          vscode.DiagnosticSeverity.Error
-        ));
-      } else {
-        // Remove da pilha até encontrar a correspondente
-        openTags.splice(lastOpenIdx, 1);
-      }
-    }
-  }
-  // O que sobrou na pilha são tags não fechadas
-  for (const open of openTags) {
-    diagnostics.push(new vscode.Diagnostic(
-      new vscode.Range(open.line, open.char, open.line, open.char + open.tag.length + 2),
-      'Opening tag <' + open.tag + '> without corresponding closing tag',
-      vscode.DiagnosticSeverity.Error
-    ));
-  }
 
   // --- Validações de estrutura, atributos obrigatórios e hierarquia ---
   let $: any;
   try {
-    $ = require('cheerio').load(text, { xmlMode: false });
+    $ = require('cheerio').load(text, { 
+      xmlMode: true,
+      decodeEntities: false,
+      recognizeSelfClosing: true,
+      xml: {
+        normalizeWhitespace: true,
+        decodeEntities: false
+      }
+    });
   } catch (e: any) {
     diagnostics.push(new vscode.Diagnostic(
       new vscode.Range(0, 0, 0, 1),
@@ -130,8 +108,14 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
   // Importações dinâmicas para evitar dependência circular
   const { allowedTags, allowedHierarchy } = require('./confluenceSchema');
 
+  // Função auxiliar para encontrar elementos por tag name
+  function findElementsByTag(tagName: string) {
+    return $('*').filter((_: number, el: any) => el.tagName === tagName);
+  }
+
   function checkTagsCheerio(selector: string, parentSelector?: string) {
-    $(selector).each((_: number, el: any) => {
+    const elements = findElementsByTag(selector);
+    elements.each((_: number, el: any) => {
       const tag = el.tagName;
       // Posição da tag no texto
       const html = $.html(el);
@@ -177,15 +161,15 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
   });
 
   // Validação de estrutura obrigatória CSP
-  const csp = $('csp:parameters');
-  if (csp.length === 0) {
+  const cspElements = findElementsByTag('csp:parameters');
+  if (cspElements.length === 0) {
     diagnostics.push(new vscode.Diagnostic(
       new vscode.Range(0, 0, 0, 1),
       'Required tag <csp:parameters> in document.',
       vscode.DiagnosticSeverity.Error
     ));
   } else {
-    const cspEl = csp[0];
+    const cspEl = cspElements[0];
     if (!$(cspEl).attr('xmlns:csp')) {
       diagnostics.push(new vscode.Diagnostic(
         new vscode.Range(0, 0, 0, 1),
@@ -193,38 +177,38 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
         vscode.DiagnosticSeverity.Error
       ));
     }
-    if ($(cspEl).find('csp:file_id').length === 0) {
+    if ($(cspEl).find('*').filter((_: number, el: any) => el.tagName === 'csp:file_id').length === 0) {
       diagnostics.push(new vscode.Diagnostic(
         new vscode.Range(0, 0, 0, 1),
         'Required tag <csp:file_id> inside <csp:parameters>.',
         vscode.DiagnosticSeverity.Error
       ));
     }
-    if ($(cspEl).find('csp:labels_list').length === 0) {
+    if ($(cspEl).find('*').filter((_: number, el: any) => el.tagName === 'csp:labels_list').length === 0) {
       diagnostics.push(new vscode.Diagnostic(
         new vscode.Range(0, 0, 0, 1),
         'Required tag <csp:labels_list> inside <csp:parameters>.',
         vscode.DiagnosticSeverity.Error
       ));
     }
-    if ($(cspEl).find('csp:parent_id').length === 0) {
+    if ($(cspEl).find('*').filter((_: number, el: any) => el.tagName === 'csp:parent_id').length === 0) {
       diagnostics.push(new vscode.Diagnostic(
         new vscode.Range(0, 0, 0, 1),
         'Required tag <csp:parent_id> inside <csp:parameters>.',
         vscode.DiagnosticSeverity.Error
       ));
     }
-    if ($(cspEl).find('csp:properties').length === 0) {
+    if ($(cspEl).find('*').filter((_: number, el: any) => el.tagName === 'csp:properties').length === 0) {
       diagnostics.push(new vscode.Diagnostic(
         new vscode.Range(0, 0, 0, 1),
         'Required tag <csp:properties> inside <csp:parameters>.',
         vscode.DiagnosticSeverity.Error
       ));
     } else {
-      const props = $(cspEl).find('csp:properties');
+      const props = $(cspEl).find('*').filter((_: number, el: any) => el.tagName === 'csp:properties');
       props.each((_: number, propEl: any) => {
-        const keys = $(propEl).find('csp:key');
-        const values = $(propEl).find('csp:value');
+        const keys = $(propEl).find('*').filter((_: number, el: any) => el.tagName === 'csp:key');
+        const values = $(propEl).find('*').filter((_: number, el: any) => el.tagName === 'csp:value');
         if (keys.length !== values.length) {
           diagnostics.push(new vscode.Diagnostic(
             new vscode.Range(0, 0, 0, 1),
@@ -237,9 +221,9 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
   }
 
   // Validação específica para ac:layout como root
-  const acLayout = $('ac:layout');
-  if (acLayout.length > 0) {
-    acLayout.each((_: number, layoutEl: any) => {
+  const acLayoutElements = findElementsByTag('ac:layout');
+  if (acLayoutElements.length > 0) {
+    acLayoutElements.each((_: number, layoutEl: any) => {
       if (!$(layoutEl).attr('version')) {
         diagnostics.push(new vscode.Diagnostic(
           new vscode.Range(0, 0, 0, 1),
@@ -254,7 +238,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
           vscode.DiagnosticSeverity.Error
         ));
       }
-      const sections = $(layoutEl).find('ac:layout-section');
+      const sections = $(layoutEl).find('*').filter((_: number, el: any) => el.tagName === 'ac:layout-section');
       if (sections.length === 0) {
         diagnostics.push(new vscode.Diagnostic(
           new vscode.Range(0, 0, 0, 1),
@@ -270,7 +254,7 @@ export function getConfluenceDiagnostics(text: string): vscode.Diagnostic[] {
               vscode.DiagnosticSeverity.Error
             ));
           }
-          const cells = $(sectionEl).find('ac:layout-cell');
+          const cells = $(sectionEl).find('*').filter((_: number, el: any) => el.tagName === 'ac:layout-cell');
           if (cells.length === 0) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(0, 0, 0, 1),

@@ -14,7 +14,6 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	// Registrar diagnósticos
 	registerDiagnostics(context, outputChannel);
-	// Exibir mensagem de ativação após toda a configuração
 	outputChannel.appendLine('CSP diagnostics registered!');
 
 	// Registrar comandos

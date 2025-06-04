@@ -14,6 +14,10 @@ Idioma
 Validação
 - Antes de implementa qualquer código, explique o que será feito e aguarde a minha confoirmação para seguir com a implementação.
 
+Build
+- Se for (re)construir a extenção, sempre use o comando npx `@vscode/vsce package`.
+- Não utilize o `npm run package`
+
 Estrutura e Organização
 - Mantenha o projeto modular: separe funcionalidades em arquivos e pastas lógicas (ex: src/utils, src/services, src/commands).
 - Evite arquivos grandes: prefira dividir em módulos menores e reutilizáveis.

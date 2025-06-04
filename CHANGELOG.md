@@ -6,6 +6,7 @@ All notable changes to the "confluence-smart-publisher" extension will be docume
 - Removed the "Compare Local Document with Published" command (diffWithPublished) to simplify the interface
 - Kept only the "Sync with Published on Confluence" command which already includes the comparison functionality
 - Bugfix in the page title emoji definition command
+- Bugfix on Confluence Diagnostics
 
 ## [0.0.6] - 2025-06-04
 - Some minor bug fixes
@@ -14,14 +15,14 @@ All notable changes to the "confluence-smart-publisher" extension will be docume
 
 **Before**:
 
-> 1 Title
-> 1.1 Subtitle
-> 1.1.1 Sub-subtitle
+> 1\. Title <br>
+> 1\.1\. Subtitle <br>
+> 1\.1\.1\. Sub-subtitle <br>
 
 **After**:
-> 1. Title
-> 1.1. Subtitle
-> 1.1.1. Sub-subtitle
+> 1\. Title <br>
+> 1\.1\. Subtitle <br>
+> 1\.1\.1\. Sub-subtitle <br>
 
 ## [0.0.5] - 2025-06-02
 - Readme translated to English
