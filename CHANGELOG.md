@@ -2,7 +2,11 @@
 
 All notable changes to the "confluence-smart-publisher" extension will be documented in this file.
 
-## [0.0.7] - 2025-06-05
+## [0.0.8] - 2025-06-05
+- Resolved broken image links in README documentation
+- Optimized extension package size by removing unnecessary image assets
+
+## [0.0.7] - 2025-06-04
 - Removed the "Compare Local Document with Published" command (diffWithPublished) to simplify the interface
 - Kept only the "Sync with Published on Confluence" command which already includes the comparison functionality
 - Bugfix in the page title emoji definition command
