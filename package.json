@@ -2,7 +2,7 @@
   "name": "confluence-smart-publisher",
   "displayName": "Confluence Smart Publisher",
   "description": "Publish and manage Confluence pages directly from VS Code",
-  "version": "0.0.8",
+  "version": "0.1.0",
   "icon": "images/csp-icon.png",
   "engines": {
     "vscode": "^1.96.0"
@@ -45,6 +45,10 @@
       {
         "command": "confluence-smart-publisher.decodeHtml",
         "title": "Decode HTML Entities"
+      },
+      {
+        "command": "confluence-smart-publisher.convertMarkdown",
+        "title": "Convert to Confluence Format"
       }
     ],
     "submenus": [
@@ -57,7 +61,7 @@
       "explorer/context": [
         {
           "submenu": "confluenceSmartPublisherMenu",
-          "when": "resourceExtname == .confluence || explorerResourceIsFolder == true",
+          "when": "resourceExtname == .confluence || resourceExtname == .md || explorerResourceIsFolder == true",
           "group": "zzz_confluenceSmartPublisherGroup@1"
         }
       ],
@@ -93,6 +97,10 @@
         {
           "command": "confluence-smart-publisher.decodeHtml",
           "when": "resourceExtname == .confluence"
+        },
+        {
+          "command": "confluence-smart-publisher.convertMarkdown",
+          "when": "resourceExtname == .md"
         }
       ]
     },
@@ -168,7 +176,9 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
     "@types/glob": "^8.1.0",
+    "@types/marked": "^5.0.2",
     "@types/mocha": "^10.0.6",
     "@types/node": "20.x",
     "@types/node-fetch": "^2.6.12",
@@ -187,10 +197,12 @@
   "dependencies": {
     "@emoji-mart/data": "^1.1.2",
     "@emoji-mart/react": "^1.1.1",
-    "emoji-mart": "^5.4.0",
     "cheerio": "^1.0.0",
+    "emoji-mart": "^5.4.0",
     "entities": "^6.0.0",
     "form-data": "^4.0.0",
+    "fs-extra": "^11.2.0",
+    "marked": "^12.0.0",
     "node-fetch": "^2.7.0",
     "xml-escape": "^1.1.0"
   },
