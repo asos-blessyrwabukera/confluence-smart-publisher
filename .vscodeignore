@@ -28,3 +28,4 @@ dist/**
 docs-for-testing/old_extension.ts
 images/diagnostics.gif
 images/formater.gif
+docs/**

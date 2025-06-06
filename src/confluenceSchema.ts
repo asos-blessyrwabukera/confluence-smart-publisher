@@ -66,7 +66,7 @@ export const TAG_BEHAVIOR: Record<string, { type: 'block' | 'inline' }> = {
 	'tbody': { type: 'block' },
 	'td': { type: 'inline' },
 	'tfoot': { type: 'block' },
-	'li': { type: 'block' },
+	'li': { type: 'inline' },
 	// CSP
 	'csp:parameters': { type: 'block' },
 	'csp:properties': { type: 'block' },
@@ -100,7 +100,7 @@ export const allowedTags: Record<string, string[]> = {
 	'ri:attachment': ['ri:filename'],
 	'ri:url': ['ri:value'],
 	'ri:shortcut': ['ri:key', 'ri:parameter'],
-	'ri:user': ['ri:userkey'],
+	'ri:user': ['ri:account-id', 'ri:local-id'],
 	'ri:space': ['ri:space-key'],
 	'ri:content-entity': ['ri:content-id'],
 	'ri:blog-post': ['ri:content-title', 'ri:posting-day'],

@@ -2,6 +2,9 @@
 
 All notable changes to the "confluence-smart-publisher" extension will be documented in this file.
 
+## [0.1.2] - 205-06-06
+- Fixed LI tag formatting and corrected the required attribute for `<ri:user>` tag
+
 ## [0.1.1] - 2025-06-05
 - Added new command to convert Markdown files to Confluence Storage Format
 - Added support for common Markdown syntax including headers, lists, code blocks, and tables
