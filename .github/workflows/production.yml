@@ -19,18 +19,13 @@ jobs:
       - name: Install dependencies
         run: npm install
         
-      - name: Build extension
-        run: npm run build
-        
-      - name: Package extension
-        run: npm run package
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
         
       - name: Publish to VS Code Marketplace
-        uses: HaaLeo/publish-vscode-extension@v1
-        with:
-          pat: ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}
-          registryUrl: https://marketplace.visualstudio.com
-          packages: ./confluence-smart-publisher-*.vsix
+        run: npx @vscode/vsce publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}
           
       - name: Update documentation
         run: |
