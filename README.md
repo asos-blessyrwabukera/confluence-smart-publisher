@@ -16,17 +16,24 @@ Visualize problemas de estrutura e tags em tempo real, com dicas e correções a
 </div>
 Formate seus arquivos `.confluence` automaticamente, com numeração de capítulos e padronização de tags.
 
-
 ## 📋 Table of Contents
 
+- [Extension in Action](#-extension-in-action)
+  - [Real-time Diagnostics](#-real-time-diagnostics)
+  - [Smart Formatter](#-smart-formatter)
 - [Features](#-features)
   - [Commands](#-commands)
+    - [Publish Document Command Flow](#publish-document-command-flow)
   - [Unique Feature](#-unique-feature)
   - [Validations and Diagnostics](#-validations-and-diagnostics)
+    - [Structure Validation](#-structure-validation)
+    - [Visual Diagnostics](#-visual-diagnostics)
+    - [Specific Validations](#-specific-validations)
+    - [Auto-correction](#-auto-correction)
+    - [Logs and Diagnostics](#-logs-and-diagnostics)
 - [Requirements](#️-requirements)
 - [Installation](#-installation)
 - [Extension Settings](#️-extension-settings)
-- [Available Commands](#️-available-commands)
 - [File Structure](#-confluence-file-structure)
 - [Dependencies](#-dependencies)
 - [Known Issues](#-known-issues)
@@ -42,6 +49,7 @@ Formate seus arquivos `.confluence` automaticamente, com numeração de capítul
 - **Page downloading**: Download Confluence pages by title or ID, converting them to local editable format.
 - **Synchronization**: Compare and synchronize local content with what's published on Confluence, choosing which version to keep.
 - **Template-based creation**: Create new files based on Confluence template pages.
+- **Markdown conversion**: Convert Markdown files to Confluence Storage Format, supporting common syntax like headers, lists, code blocks, and tables.
 - **Automatic formatting**: Format `.confluence` files with specific rules, including automatic chapter numbering.
 - **Structure validation**: Real-time diagnostics of required tags, structure, and attributes, displaying issues in VSCode.
 - **Tag auto-completion**: Smart suggestions for Confluence custom tags and attributes.

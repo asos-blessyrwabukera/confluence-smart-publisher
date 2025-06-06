@@ -2,6 +2,10 @@
 
 All notable changes to the "confluence-smart-publisher" extension will be documented in this file.
 
+## [0.1.0] - 2025-06-05
+- Added new command to convert Markdown files to Confluence Storage Format
+- Added support for common Markdown syntax including headers, lists, code blocks, and tables
+
 ## [0.0.8] - 2025-06-05
 - Resolved broken image links in README documentation
 - Optimized extension package size by removing unnecessary image assets
