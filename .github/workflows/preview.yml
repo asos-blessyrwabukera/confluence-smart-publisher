@@ -1,4 +1,4 @@
-name: Production Release
+name: Pre Release
 
 on:
   push:
