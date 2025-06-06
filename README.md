@@ -16,6 +16,11 @@ Visualize problemas de estrutura e tags em tempo real, com dicas e correções a
 </div>
 Formate seus arquivos `.confluence` automaticamente, com numeração de capítulos e padronização de tags.
 
+## ☕️ Buy me a coffe
+Enjoying the Confluence Smart Publisher extension?
+[Support its development by buying me a coffee and help keep it running!](https://www.paypal.com/donate/?business=ESQ3RSFYC6JMY&no_recurring=0&item_name=Enjoying+the+Confluence+Smart+Publisher+extension?%0ASupport+its+development+by+buying+me+a+coffee+and+help+keep+it+running%21&currency_code=BRL)
+
+
 ## 📋 Table of Contents
 
 - [Extension in Action](#-extension-in-action)
@@ -45,7 +50,7 @@ Formate seus arquivos `.confluence` automaticamente, com numeração de capítul
 
 ### 🎮 Commands
 - **Direct publishing**: Publish `.confluence` files as pages on Confluence with a single click. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/publish-document)
-- **Page downloading**: Download Confluence pages by title or ID, converting them to local editable format. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/download-by-title) | [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/download-by-id)
+- **Page downloading**: Download Confluence pages by title or ID, converting them to local editable format. [📚 Documentation by title](https://antoniocarelli.github.io/confluence-smart-publisher/docs/download-by-title)  [📚 Documentation by id](https://antoniocarelli.github.io/confluence-smart-publisher/docs/download-by-id)
 - **Synchronization**: Compare and synchronize local content with what's published on Confluence, choosing which version to keep. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/sync-with-published)
 - **Template-based creation**: Create new files based on Confluence template pages. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/create-document)
 - **Markdown conversion**: Convert Markdown files to Confluence Storage Format, supporting common syntax like headers, lists, code blocks, and tables. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/convert-markdown)
