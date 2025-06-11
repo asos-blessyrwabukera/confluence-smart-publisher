@@ -5,7 +5,7 @@ All notable changes to the "confluence-smart-publisher" extension will be docume
 ## [0.1.3] - 2025-06-07
 - Removed required attributes for 'ri:space' tag in Confluence schema
 - Removed required attribute 'ri:space-key' for 'ri:page' tag in Confluence schema
-
+- Updated GitHub Actions workflows to maintain only essential files in gh-pages branch
 
 ## [0.1.2] - 205-06-06
 - Fixed LI tag formatting and corrected the required attribute for `<ri:user>` tag
