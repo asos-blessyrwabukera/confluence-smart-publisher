@@ -49,6 +49,10 @@
       {
         "command": "confluence-smart-publisher.convertMarkdown",
         "title": "Convert to Confluence Format"
+      },
+      {
+        "command": "confluence-smart-publisher.convertToMarkdown",
+        "title": "Convert to Markdown"
       }
     ],
     "submenus": [
