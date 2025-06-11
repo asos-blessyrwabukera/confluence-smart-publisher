@@ -101,7 +101,7 @@ export const allowedTags: Record<string, string[]> = {
 	'ri:url': ['ri:value'],
 	'ri:shortcut': ['ri:key', 'ri:parameter'],
 	'ri:user': ['ri:account-id', 'ri:local-id'],
-	'ri:space': ['ri:space-key'],
+	'ri:space': [],
 	'ri:content-entity': ['ri:content-id'],
 	'ri:blog-post': ['ri:content-title', 'ri:posting-day'],
 	// Template tags (variables)
