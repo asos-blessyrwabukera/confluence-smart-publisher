@@ -6,6 +6,7 @@ import { getUnclosedOrUnopenedTagDiagnostics, getConfluenceDiagnostics } from '.
 import { allowedTags, allowedValues, allowedHierarchy } from './confluenceSchema';
 import { getEmojiPickerHtml } from './webview';
 import { MarkdownConverter } from './markdownConverter';
+import { ConfluenceToMarkdownConverter } from './confluenceToMarkdownConverter';
 
 export function registerCommands(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
     // Command to publish .confluence file
@@ -410,7 +411,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 outputChannel.appendLine(`[Convert] Starting conversion of file: "${uri.fsPath}"`);
                 const converter = MarkdownConverter.getInstance();
                 const confluenceFilePath = await converter.convertFile(uri.fsPath);
-                outputChannel.appendLine(`[Convert] File successfully converted: "${confluenceFilePath}"`);
+                outputChannel.appendLine(`[Convert] File successfully converted: "${path.basename(confluenceFilePath)}"`);
                 vscode.window.showInformationMessage(`File successfully converted: "${path.basename(confluenceFilePath)}"`);
                 
                 // Opens the converted file
@@ -424,6 +425,40 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
         }
     });
 
+    // Command to convert Confluence to Markdown
+    const convertToMarkdownCmd = vscode.commands.registerCommand('confluence-smart-publisher.convertToMarkdown', async (uri: vscode.Uri) => {
+        if (!uri || !uri.fsPath.endsWith('.confluence')) {
+            vscode.window.showErrorMessage('Selecione um arquivo .confluence para converter.');
+            return;
+        }
+
+        try {
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Convertendo arquivo para Markdown...',
+                cancellable: false
+            }, async () => {
+                outputChannel.appendLine(`[Convert to Markdown] Converting file: ${uri.fsPath}`);
+                const fs = await import('fs');
+                const path = await import('path');
+                const content = fs.readFileSync(uri.fsPath, 'utf-8');
+                
+                const converter = new ConfluenceToMarkdownConverter(content);
+                const markdownContent = converter.convert();
+                
+                const markdownPath = uri.fsPath.replace('.confluence', '.md');
+                fs.writeFileSync(markdownPath, markdownContent, { encoding: 'utf-8' });
+                
+                outputChannel.appendLine(`[Convert to Markdown] File converted successfully: ${markdownPath}`);
+                vscode.window.showInformationMessage(`Arquivo convertido com sucesso: ${path.basename(markdownPath)}`);
+            });
+        } catch (e: any) {
+            outputChannel.appendLine(`[Convert to Markdown] Error: ${e.message || e}`);
+            outputChannel.show(true);
+            vscode.window.showErrorMessage(`Erro ao converter arquivo: ${e.message || e}`);
+        }
+    });
+
     // Register all commands
     context.subscriptions.push(
         publishCmd,
@@ -434,6 +469,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
         syncWithPublishedCmd,
         setEmojiTitleCmd,
         decodeHtmlCmd,
-        convertMarkdownCmd
+        convertMarkdownCmd,
+        convertToMarkdownCmd
     );
 } 

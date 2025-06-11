@@ -2,7 +2,14 @@
 
 All notable changes to the "confluence-smart-publisher" extension will be documented in this file.
 
+## [0.2.0] - 2025-06-11
+- Added new command to convert Confluence Storage Format files to Markdown
+  - Support for converting Confluence macros (info, tip, note, warning, error) to Markdown with emojis
+  - Support for converting Confluence tables, lists, code blocks, and expandable sections to Markdown
+  - Added YAML front matter support for document metadata
+
 ## [0.1.3] - 2025-06-07
+- Refactored cleanHeadingContent function to remove numbering at the beginning of content
 - Removed required attributes for 'ri:space' tag in Confluence schema
 - Removed required attribute 'ri:space-key' for 'ri:page' tag in Confluence schema
 - Updated GitHub Actions workflows to maintain only essential files in gh-pages branch
@@ -31,9 +38,9 @@ All notable changes to the "confluence-smart-publisher" extension will be docume
 
 **Before**:
 
-> 1\. Title <br>
-> 1\.1\. Subtitle <br>
-> 1\.1\.1\. Sub-subtitle <br>
+> 1 Title <br>
+> 1\.1 Subtitle <br>
+> 1\.1\.1 Sub-subtitle <br>
 
 **After**:
 > 1\. Title <br>

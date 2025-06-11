@@ -2,7 +2,7 @@
   "name": "confluence-smart-publisher",
   "displayName": "Confluence Smart Publisher",
   "description": "Publish and manage Confluence pages directly from VS Code",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "icon": "images/csp-icon.png",
   "engines": {
     "vscode": "^1.96.0"
@@ -101,6 +101,10 @@
         {
           "command": "confluence-smart-publisher.convertMarkdown",
           "when": "resourceExtname == .md"
+        },
+        {
+          "command": "confluence-smart-publisher.convertToMarkdown",
+          "when": "resourceExtname == .confluence"
         }
       ]
     },
@@ -204,7 +208,8 @@
     "fs-extra": "^11.2.0",
     "marked": "^12.0.0",
     "node-fetch": "^2.7.0",
-    "xml-escape": "^1.1.0"
+    "xml-escape": "^1.1.0",
+    "yaml": "^2.8.0"
   },
   "publisher": "AntonioCarelli",
   "repository": {
