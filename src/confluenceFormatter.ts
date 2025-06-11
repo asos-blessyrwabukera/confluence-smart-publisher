@@ -237,9 +237,14 @@ function numberHeadings(text: string): string {
 function cleanHeadingContent(content: string): string {
   // Remove all numeric prefixes from the beginning of content, as many times as they appear
   let cleaned = content.trim();
-  while (/^\d+(\.\d+)*\s+/.test(cleaned)) {
-    cleaned = cleaned.replace(/^\d+(\.\d+)*\s+/, '');
-  }
+  
+  // Regex para identificar numeração no início do conteúdo
+  // Captura números seguidos de ponto e espaço, podendo ter múltiplos níveis
+  const numberPrefixRegex = /^(\d+(\.\d+)*\.\s+)+/;
+  
+  // Remove a numeração existente, mantendo o resto do conteúdo intacto
+  cleaned = cleaned.replace(numberPrefixRegex, '');
+  
   return cleaned;
 }
 
