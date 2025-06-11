@@ -1,246 +1,265 @@
+import TurndownService from 'turndown';
+import * as cheerio from 'cheerio';
 import * as vscode from 'vscode';
-import { decodeHtmlEntities } from './confluenceFormatter';
-import * as yaml from 'yaml';
 
-interface ConfluenceMetadata {
-    file_id: string;
-    labels: string[];
-    version: string;
-    status: string;
-    lastModified: Date;
-    properties: Record<string, string>;
-}
-
+/**
+ * Classe responsável por converter conteúdo do Confluence para Markdown
+ */
 export class ConfluenceToMarkdownConverter {
-    private metadata: ConfluenceMetadata;
-    private content: string;
+    private turndownService: TurndownService;
+    private outputChannel: vscode.OutputChannel;
 
-    constructor(confluenceContent: string) {
-        this.content = confluenceContent;
-        this.metadata = this.extractMetadata();
+    constructor(outputChannel: vscode.OutputChannel) {
+        this.outputChannel = outputChannel;
+        this.turndownService = new TurndownService({
+            headingStyle: 'atx',
+            codeBlockStyle: 'fenced',
+            bulletListMarker: '-',
+        });
+
+        this.setupCustomRules();
     }
 
-    private extractMetadata(): ConfluenceMetadata {
-        const fileIdMatch = this.content.match(/<csp:file_id>(.*?)<\/csp:file_id>/);
-        const labelsMatch = this.content.match(/<csp:labels_list>(.*?)<\/csp:labels_list>/);
-        const propertiesMatch = this.content.match(/<csp:properties>(.*?)<\/csp:properties>/s);
-
-        const properties: Record<string, string> = {};
-        if (propertiesMatch) {
-            const keyValuePairs = propertiesMatch[1].match(/<csp:key>(.*?)<\/csp:key>\s*<csp:value>(.*?)<\/csp:value>/g);
-            if (keyValuePairs) {
-                keyValuePairs.forEach(pair => {
-                    const keyMatch = pair.match(/<csp:key>(.*?)<\/csp:key>/);
-                    const valueMatch = pair.match(/<csp:value>(.*?)<\/csp:value>/);
-                    if (keyMatch && valueMatch) {
-                        properties[keyMatch[1]] = valueMatch[1];
-                    }
-                });
+    /**
+     * Configura as regras customizadas para conversão de macros do Confluence
+     */
+    private setupCustomRules(): void {
+        // Regra para a macro <ac:structured-macro ac:name="expand">
+        this.turndownService.addRule('confluenceExpand', {
+            filter: (node) => {
+                return node.nodeName === 'AC:STRUCTURED-MACRO' && node.getAttribute('ac:name') === 'expand';
+            },
+            replacement: (content, node) => {
+                const macroNode = node as HTMLElement;
+                // Captura o valor do título ANTES de remover o parâmetro
+                const titleNode = Array.from(macroNode.getElementsByTagName('ac:parameter')).find(p => p.getAttribute('ac:name') === 'title');
+                const title = titleNode?.textContent || 'Details';
+                // Remove o parâmetro de título do conteúdo expandido
+                if (titleNode) {
+                    titleNode.parentNode?.removeChild(titleNode);
+                }
+                // Re-obter o conteúdo sem o parâmetro de título
+                let innerContent = '';
+                const richTextBody = macroNode.querySelector('ac\\:rich-text-body');
+                if (richTextBody) {
+                    innerContent = richTextBody.innerHTML || '';
+                } else {
+                    innerContent = content;
+                }
+                return `\n<details>\n<summary>${title}</summary>\n\n${innerContent}\n</details>\n`;
             }
+        });
+
+        // Regra para as macros de callout/painel (note, tip, info, warning, error)
+        const panelMacros = ['note', 'tip', 'info', 'warning', 'error'];
+        panelMacros.forEach(macroName => {
+            this.turndownService.addRule(`confluencePanel_${macroName}`, {
+                filter: (node) => {
+                    return (node.nodeName === 'AC:STRUCTURED-MACRO' && node.getAttribute('ac:name') === macroName) ||
+                           (node.nodeName === 'AC:ADF-NODE' && node.getAttribute('type') === 'panel');
+                },
+                replacement: (content) => {
+                    return `\n> ${content.split('\n').join('\n> ')}\n\n`;
+                }
+            });
+        });
+
+        // Regra para a macro <ac:structured-macro ac:name="code">
+        this.turndownService.addRule('confluenceCodeMacro', {
+            filter: (node) => {
+                return node.nodeName === 'AC:STRUCTURED-MACRO' && 
+                       node.getAttribute('ac:name') === 'code';
+            },
+            replacement: (content, node) => {
+                const macroNode = node as HTMLElement;
+                const languageNode = Array.from(macroNode.getElementsByTagName('ac:parameter')).find(p => p.getAttribute('ac:name') === 'language');
+                const language = languageNode?.textContent || '';
+                const codeBody = macroNode.querySelector('ac\\:plain-text-body')?.textContent?.trim() || '';
+                return `\`\`\`${language}\n${codeBody}\n\`\`\`\n\n`;
+            }
+        });
+
+        // Regra para a macro <ac:structured-macro ac:name="status">
+        this.turndownService.addRule('confluenceStatus', {
+            filter: (node) => {
+              return node.nodeName === 'AC:STRUCTURED-MACRO' && node.getAttribute('ac:name') === 'status';
+            },
+            replacement: (content, node) => {
+                const macroNode = node as HTMLElement;
+                const titleNode = Array.from(macroNode.getElementsByTagName('ac:parameter')).find(p => p.getAttribute('ac:name') === 'title');
+                const title = titleNode?.textContent || '';
+                return `**${title}**`;
+            }
+        });
+        
+        // Regra para a macro de fórmula matemática
+        this.turndownService.addRule('confluenceMath', {
+            filter: (node) => {
+                return node.nodeName === 'AC:STRUCTURED-MACRO' && node.getAttribute('ac:name') === 'easy-math-block';
+            },
+            replacement: (content, node) => {
+                const macroNode = node as HTMLElement;
+                const bodyNode = Array.from(macroNode.getElementsByTagName('ac:parameter')).find(p => p.getAttribute('ac:name') === 'body');
+                const latex = bodyNode?.textContent || '';
+                return `\n$$\n${latex}\n$$\n`;
+            }
+        });
+
+        // Regra para task lists
+        this.turndownService.addRule('confluenceTaskList', {
+            filter: (node) => node.nodeName.toLowerCase() === 'ac:task-list',
+            replacement: (content) => {
+                return content;
+            }
+        });
+        this.turndownService.addRule('confluenceTask', {
+            filter: (node) => node.nodeName.toLowerCase() === 'ac:task',
+            replacement: (content, node) => {
+                const taskNode = node as HTMLElement;
+                const statusNode = taskNode.querySelector('ac\\:task-status');
+                const status = statusNode?.textContent || '';
+                const checkbox = (status === 'complete') ? '- [x]' : '- [ ]';
+                const bodyNode = taskNode.querySelector('ac\\:task-body');
+                const taskText = bodyNode?.textContent?.trim() || '';
+                return `${checkbox} ${taskText}\n`;
+            }
+        });
+
+        // Regra para emoticons
+        this.turndownService.addRule('confluenceEmoticon', {
+            filter: (node) => node.nodeName.toLowerCase() === 'ac:emoticon',
+            replacement: (content, node) => {
+                return (node as HTMLElement).getAttribute('ac:emoji-fallback') || '';
+            }
+        });
+    }
+
+    /**
+     * Converte conteúdo do Confluence para Markdown
+     * @param confluenceContent - Conteúdo no formato Confluence Storage
+     * @returns Conteúdo convertido para Markdown
+     */
+    public convert(confluenceContent: string): string {
+        this.outputChannel.appendLine('[Convert] Iniciando conversão...');
+
+        if (!confluenceContent.trim()) {
+            throw new Error('O conteúdo do Confluence está vazio.');
         }
 
-        return {
-            file_id: fileIdMatch ? fileIdMatch[1] : '',
-            labels: labelsMatch ? labelsMatch[1].split(',').map(label => label.trim()) : [],
-            version: properties['version'] || '1.0',
-            status: properties['status'] || 'current',
-            lastModified: new Date(),
-            properties: properties
-        };
-    }
-
-    private convertTitles(): string {
-        let content = this.content;
-        const titleMapping = {
-            'h1': '#',
-            'h2': '##',
-            'h3': '###',
-            'h4': '####',
-            'h5': '#####',
-            'h6': '######'
-        };
-
-        Object.entries(titleMapping).forEach(([htmlTag, markdownTag]) => {
-            const regex = new RegExp(`<${htmlTag}[^>]*>(.*?)</${htmlTag}>`, 'g');
-            content = content.replace(regex, (match, title) => `${markdownTag} ${decodeHtmlEntities(title)}`);
+        // Carrega o conteúdo no Cheerio para manipulação
+        const $ = cheerio.load(confluenceContent, {
+            xmlMode: true,
+            decodeEntities: false
         });
 
-        return content;
-    }
+        this.outputChannel.appendLine('[Convert] Conteúdo carregado no Cheerio');
 
-    private convertTables(): string {
-        let content = this.content;
-        const tableRegex = /<table[^>]*>(.*?)<\/table>/gs;
+        // Remove o bloco de parâmetros CSP que não é parte do conteúdo
+        $('csp\\:parameters').remove();
+
+        // Converte <time> para seu texto
+        $('time').each((i, el) => {
+            const dateTime = $(el).attr('datetime');
+            $(el).replaceWith(dateTime || '');
+        });
         
-        content = content.replace(tableRegex, (match: string, tableContent: string) => {
-            const rows = tableContent.match(/<tr[^>]*>(.*?)<\/tr>/gs) || [];
-            let markdownTable = '';
-            
-            rows.forEach((row: string, index: number) => {
-                const cells = row.match(/<(?:th|td)[^>]*>(.*?)<\/(?:th|td)>/gs) || [];
-                const rowContent = cells.map((cell: string) => {
-                    const cellContent = cell.replace(/<(?:th|td)[^>]*>(.*?)<\/(?:th|td)>/s, '$1');
-                    return `| ${decodeHtmlEntities(cellContent.trim())} `;
-                }).join('') + '|';
-                
-                markdownTable += rowContent + '\n';
-                
-                if (index === 0) {
-                    markdownTable += cells.map(() => '| --- ').join('') + '|\n';
+        // Trata links do Jira que são exibidos como cards
+        $('a[data-card-appearance="block"]').each((i, el) => {
+            const href = $(el).attr('href');
+            // Converte para um link Markdown padrão
+            if(href) {
+                $(el).replaceWith(`[${href}](${href})`);
+            }
+        });
+
+        // Processa links do Confluence
+        $('ac\\:link').each((index, element) => {
+            const pageElement = $(element).find('ri\\:page');
+            const title = pageElement.attr('ri:content-title');
+            if (title) {
+                const newLink = `[${title}](./${title.replace(/ /g, '-')}.md)`;
+                $(element).replaceWith(newLink);
+            }
+        });
+
+        // Obtém o HTML processado
+        const processedHtml = $.html() || '';
+        this.outputChannel.appendLine(`[Convert] Tamanho do HTML processado: ${processedHtml.length} caracteres`);
+
+        if (!processedHtml) {
+            throw new Error('Não foi possível processar o conteúdo HTML.');
+        }
+
+        // Converte para Markdown
+        let markdown = this.turndownService.turndown(processedHtml);
+        this.outputChannel.appendLine(`[Convert] Tamanho do Markdown gerado: ${markdown.length} caracteres`);
+
+        // Gera o TOC após a conversão para Markdown
+        const tocRegex = /^ac:structured-macro\[ac:name="toc"\]$/m;
+        if (markdown.includes('<ac:structured-macro ac:name="toc"')) {
+            // Busca todos os títulos Markdown
+            const headingRegex = /^(#{1,6})\s+(.+)$/gm;
+            const headings: {text: string, slug: string, level: number}[] = [];
+            let match;
+            let idx = 0;
+            while ((match = headingRegex.exec(markdown)) !== null) {
+                const level = match[1].length;
+                const text = match[2].trim();
+                const slug = `${++idx}-${text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u00C0-\u017F-]+/g, '')}`;
+                headings.push({ text, slug, level });
+            }
+            // Gera o TOC em Markdown
+            let tocMarkdown = '';
+            let isFirstH1 = true;
+            headings.forEach(h => {
+                if (h.level === 1) {
+                    if (!isFirstH1) tocMarkdown += '\n';
+                    isFirstH1 = false;
                 }
+                const indent = '  '.repeat(h.level - 1);
+                tocMarkdown += `${indent}- [${h.text}](#${h.slug})\n`;
             });
-            
-            return markdownTable;
-        });
+            // Substitui a macro TOC pelo TOC gerado
+            markdown = markdown.replace(/<ac:structured-macro ac:name="toc"[\s\S]*?<\/ac:structured-macro>/, tocMarkdown.trim());
+            this.outputChannel.appendLine(`[Convert] Índice Markdown gerado com ${headings.length} itens.`);
+        }
 
-        return content;
+        // Verifica se o resultado está vazio
+        if (!markdown.trim()) {
+            throw new Error('A conversão resultou em um arquivo vazio. Verifique se o arquivo de origem contém conteúdo válido.');
+        }
+
+        return markdown;
     }
 
-    private convertLists(): string {
-        let content = this.content;
-        
-        // Remove csp:parameters e outros elementos não relacionados ao conteúdo
-        content = content.replace(/<csp:parameters[^>]*>.*?<\/csp:parameters>/s, '');
-        
-        // Converte listas ordenadas
-        content = content.replace(/<ol[^>]*>(.*?)<\/ol>/gs, (match: string, listContent: string) => {
-            const items = listContent.match(/<li[^>]*>(.*?)<\/li>/gs) || [];
-            return items.map((item: string, index: number) => {
-                const itemContent = item.replace(/<li[^>]*>(.*?)<\/li>/s, '$1');
-                return `${index + 1}. ${decodeHtmlEntities(itemContent.trim())}`;
-            }).join('\n');
-        });
+    /**
+     * Converte um arquivo do Confluence para Markdown
+     * @param filePath - Caminho do arquivo .confluence
+     * @returns Caminho do arquivo Markdown gerado
+     */
+    public async convertFile(filePath: string): Promise<string> {
+        const fs = await import('fs');
+        const path = await import('path');
 
-        // Converte listas não ordenadas
-        content = content.replace(/<ul[^>]*>(.*?)<\/ul>/gs, (match: string, listContent: string) => {
-            const items = listContent.match(/<li[^>]*>(.*?)<\/li>/gs) || [];
-            return items.map((item: string) => {
-                const itemContent = item.replace(/<li[^>]*>(.*?)<\/li>/s, '$1');
-                return `- ${decodeHtmlEntities(itemContent.trim())}`;
-            }).join('\n');
-        });
+        // Lê o conteúdo do arquivo
+        const content = fs.readFileSync(filePath, 'utf-8');
+        this.outputChannel.appendLine(`[Convert] Arquivo lido: ${content.length} caracteres`);
 
-        return content;
-    }
+        // Verifica se o arquivo está vazio
+        if (!content.trim()) {
+            throw new Error('O arquivo de origem está vazio.');
+        }
 
-    private convertCodeBlocks(): string {
-        let content = this.content;
-        const codeBlockRegex = /<ac:structured-macro[^>]*ac:name="code"[^>]*>(.*?)<\/ac:structured-macro>/gs;
-        
-        content = content.replace(codeBlockRegex, (match, macroContent) => {
-            const languageMatch = macroContent.match(/<ac:parameter[^>]*ac:name="language"[^>]*>(.*?)<\/ac:parameter>/);
-            const codeMatch = macroContent.match(/<ac:plain-text-body[^>]*>(.*?)<\/ac:plain-text-body>/);
-            
-            if (codeMatch) {
-                const language = languageMatch ? languageMatch[1] : '';
-                const code = decodeHtmlEntities(codeMatch[1]);
-                return `\`\`\`${language}\n${code}\n\`\`\``;
-            }
-            
-            return match;
-        });
+        // Converte o conteúdo
+        const markdown = this.convert(content);
 
-        return content;
-    }
+        // Gera o caminho do arquivo de saída
+        const outputPath = filePath.replace('.confluence', '.md');
 
-    private convertQuotesAndNotes(): string {
-        let content = this.content;
-        
-        const macroIconMap = {
-            'info': 'ℹ️',
-            'tip': '💡',
-            'note': '📝',
-            'warning': '⚠️',
-            'error': '⛔'
-        };
+        // Salva o arquivo Markdown
+        fs.writeFileSync(outputPath, markdown, 'utf-8');
+        this.outputChannel.appendLine(`[Convert] Arquivo Markdown salvo em: ${outputPath}`);
 
-        // Converte todos os tipos de blocos de nota
-        Object.entries(macroIconMap).forEach(([macroName, icon]) => {
-            const regex = new RegExp(`<ac:structured-macro[^>]*ac:name="${macroName}"[^>]*>(.*?)</ac:structured-macro>`, 'gs');
-            content = content.replace(regex, (match: string, noteContent: string) => {
-                const titleMatch = noteContent.match(/<ac:parameter[^>]*ac:name="title"[^>]*>(.*?)<\/ac:parameter>/);
-                const contentMatch = noteContent.match(/<ac:rich-text-body[^>]*>(.*?)<\/ac:rich-text-body>/);
-                
-                if (contentMatch) {
-                    const title = titleMatch ? titleMatch[1] : macroName.charAt(0).toUpperCase() + macroName.slice(1);
-                    const noteText = decodeHtmlEntities(contentMatch[1]);
-                    return `> ${icon} **${title}**: ${noteText}`;
-                }
-                
-                return match;
-            });
-        });
-
-        return content;
-    }
-
-    private convertExpandableBlocks(): string {
-        let content = this.content;
-        const expandRegex = /<ac:structured-macro[^>]*ac:name="expand"[^>]*>(.*?)<\/ac:structured-macro>/gs;
-        
-        content = content.replace(expandRegex, (match, expandContent) => {
-            const titleMatch = expandContent.match(/<ac:parameter[^>]*ac:name="title"[^>]*>(.*?)<\/ac:parameter>/);
-            const contentMatch = expandContent.match(/<ac:rich-text-body[^>]*>(.*?)<\/ac:rich-text-body>/);
-            
-            if (contentMatch) {
-                const title = titleMatch ? titleMatch[1] : 'Expandir';
-                const expandText = decodeHtmlEntities(contentMatch[1]);
-                return `<details>\n<summary>${title}</summary>\n\n${expandText}\n</details>`;
-            }
-            
-            return match;
-        });
-
-        return content;
-    }
-
-    private convertLinks(): string {
-        let content = this.content;
-        
-        // Converte links internos
-        content = content.replace(/<ac:link[^>]*>(.*?)<\/ac:link>/gs, (match, linkContent) => {
-            const pageMatch = linkContent.match(/<ri:page[^>]*ri:content-title="([^"]*)"[^>]*>/);
-            const textMatch = linkContent.match(/<ac:link-body>(.*?)<\/ac:link-body>/);
-            
-            if (pageMatch && textMatch) {
-                const pageTitle = pageMatch[1];
-                const linkText = textMatch[1];
-                const anchor = pageTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                return `[${decodeHtmlEntities(linkText)}](#${anchor})`;
-            }
-            
-            return match;
-        });
-
-        // Converte links externos
-        content = content.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gs, (match, url, text) => {
-            return `[${decodeHtmlEntities(text)}](${url})`;
-        });
-
-        return content;
-    }
-
-    public convert(): string {
-        // Extrai metadados e cria o cabeçalho YAML
-        const yamlHeader = yaml.stringify(this.metadata);
-        
-        // Aplica as conversões
-        let markdownContent = this.content;
-        markdownContent = this.convertTitles();
-        markdownContent = this.convertTables();
-        markdownContent = this.convertLists();
-        markdownContent = this.convertCodeBlocks();
-        markdownContent = this.convertQuotesAndNotes();
-        markdownContent = this.convertExpandableBlocks();
-        markdownContent = this.convertLinks();
-        
-        // Remove tags HTML restantes
-        markdownContent = markdownContent.replace(/<[^>]+>/g, '');
-        
-        // Decodifica entidades HTML
-        markdownContent = decodeHtmlEntities(markdownContent);
-        
-        // Combina o cabeçalho YAML com o conteúdo
-        return `---\n${yamlHeader}---\n\n${markdownContent}`;
+        return outputPath;
     }
 } 
