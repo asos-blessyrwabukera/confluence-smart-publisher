@@ -96,7 +96,7 @@ export const allowedTags: Record<string, string[]> = {
 	'ac:placeholder': [],
 	'ac:emoticon': ['ac:name'],
 	// Resource Identifiers tags
-	'ri:page': ['ri:content-title', 'ri:space-key'],
+	'ri:page': ['ri:content-title'],
 	'ri:attachment': ['ri:filename'],
 	'ri:url': ['ri:value'],
 	'ri:shortcut': ['ri:key', 'ri:parameter'],
