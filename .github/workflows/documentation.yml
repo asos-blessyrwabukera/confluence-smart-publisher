@@ -1,0 +1,55 @@
+# Nome do Workflow
+name: Deploy Documentation to GitHub Pages
+
+# Gatilhos: o workflow roda em pushes para as branches 'main' ou 'preview'
+on:
+  push:
+    branches:
+      - main
+      - preview
+
+# Permissões necessárias para que a Action possa escrever na branch gh-pages
+permissions:
+  contents: write
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Faz o checkout do código da branch que acionou o workflow (main ou preview)
+      # Assim, temos acesso aos arquivos README.md e docs/*.md mais recentes daquela branch.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Deploy para PRODUÇÃO (raiz) se a branch for a 'main'
+      - name: Deploy to Production
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          # Token de autenticação para permitir o push no repositório
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # A branch de destino para a publicação
+          publish_branch: gh-pages
+          # Lista de arquivos e pastas a serem publicados.
+          # A action copiará o README.md e a pasta 'docs' inteira.
+          publish_files: |
+            README.md
+            docs
+          # MUITO IMPORTANTE: Ao publicar na raiz, não apague a pasta 'preview'.
+          # Isso garante que o deploy de produção não interfira no ambiente de preview.
+          clean_exclude: |
+            preview
+
+      # 3. Deploy para PREVIEW (subpasta /preview) se a branch for a 'preview'
+      - name: Deploy to Preview
+        if: github.ref == 'refs/heads/preview'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_files: |
+            README.md
+            docs
+          # Define o diretório de destino na branch gh-pages.
+          # Os arquivos serão publicados dentro da pasta 'preview'.
+          destination_dir: preview

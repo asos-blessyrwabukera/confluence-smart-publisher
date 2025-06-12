@@ -31,29 +31,3 @@ jobs:
         run: npx @vscode/vsce publish
         env:
           VSCE_PAT: ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}
-          
-      - name: Update documentation
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-          git fetch origin
-          # Limpa o estado do repositório
-          git reset --hard
-          git clean -fd
-          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
-            git checkout gh-pages
-            git pull origin gh-pages
-          else
-            git checkout --orphan gh-pages
-          fi
-          # Remove todos os arquivos exceto .git
-          git rm -rf .
-          # Copia apenas os arquivos e pastas necessários
-          cp -r docs .
-          cp -r .cursor .
-          cp README.md .
-          cp .gitignore .
-          cp .vscodeignore .
-          git add .
-          git commit -m "Update documentation [skip ci]"
-          git push origin gh-pages
