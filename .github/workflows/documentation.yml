@@ -1,5 +1,5 @@
 # Nome do Workflow
-name: Deploy Markdown Documentation to GitHub Pages
+name: Build and Deploy Documentation to GitHub Pages
 
 # Acionadores: o workflow é executado em pushes para os ramos 'main' ou 'preview'
 on:
@@ -20,13 +20,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Prepara os ficheiros para publicação
-      # Cria um diretório temporário e copia os ficheiros .md para lá
-      - name: Prepare publish directory
+      # 2. Constrói os ficheiros HTML a partir do Markdown
+      - name: Build HTML from Markdown
         run: |
+          # Cria o diretório de saída
           mkdir build
-          cp README.md build/
-          cp -r docs build/
+
+          # Converte README.md para index.html (página principal)
+          # A flag --standalone cria um ficheiro HTML completo
+          pandoc README.md --standalone -o build/index.html
+
+          # Cria a subpasta para os outros documentos
+          mkdir build/docs
+
+          # Converte cada ficheiro .md dentro da pasta /docs para .html
+          for file in docs/*.md; do
+            filename=$(basename "$file" .md)
+            pandoc "$file" --standalone -o "build/docs/$filename.html"
+          done
+          
+          # ✅ PASSO CRÍTICO: Corrige os links internos nos ficheiros HTML gerados
+          # Procura todos os ficheiros .html e substitui as referências a ".md" por ".html"
+          find build -type f -name "*.html" -exec sed -i 's/\.md/\.html/g' {} +
 
       # 3. Implementa para PRODUÇÃO (raiz) se o ramo for 'main'
       - name: Deploy to Production
@@ -34,9 +49,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Publica o conteúdo do diretório que preparámos
           publish_dir: ./build
-          # Ao publicar na raiz, não apague a pasta 'preview'
           clean_exclude: |
             preview
 
@@ -46,7 +59,5 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Publica o conteúdo do diretório que preparámos
           publish_dir: ./build
-          # Coloca os ficheiros dentro da pasta 'preview' no ramo gh-pages
           destination_dir: preview
