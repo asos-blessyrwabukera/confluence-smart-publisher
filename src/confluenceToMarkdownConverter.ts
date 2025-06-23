@@ -1,5 +1,4 @@
 import TurndownService from 'turndown';
-import * as cheerio from 'cheerio';
 import * as vscode from 'vscode';
 
 /**
@@ -78,19 +77,6 @@ export class ConfluenceToMarkdownConverter {
                 return `\`\`\`${language}\n${codeBody}\n\`\`\`\n\n`;
             }
         });
-
-        // Regra para a macro <ac:structured-macro ac:name="status">
-        this.turndownService.addRule('confluenceStatus', {
-            filter: (node) => {
-              return node.nodeName === 'AC:STRUCTURED-MACRO' && node.getAttribute('ac:name') === 'status';
-            },
-            replacement: (content, node) => {
-                const macroNode = node as HTMLElement;
-                const titleNode = Array.from(macroNode.getElementsByTagName('ac:parameter')).find(p => p.getAttribute('ac:name') === 'title');
-                const title = titleNode?.textContent || '';
-                return `**${title}**`;
-            }
-        });
         
         // Regra para a macro de fórmula matemática
         this.turndownService.addRule('confluenceMath', {
@@ -132,6 +118,64 @@ export class ConfluenceToMarkdownConverter {
                 return (node as HTMLElement).getAttribute('ac:emoji-fallback') || '';
             }
         });
+
+        // Regra para tabelas HTML
+        this.turndownService.addRule('confluenceTable', {
+            filter: (node) => node.nodeName === 'TABLE',
+            replacement: (content, node) => {
+                const table = node as HTMLElement;
+                let markdown = '';
+                const rows = Array.from(table.getElementsByTagName('tr'));
+                if (rows.length === 0) {return '';}
+                // Detecta se é tabela de propriedades: todas as linhas têm 1 <th> e 1 <td>
+                const isPropertyTable = rows.every(row => {
+                    const ths = row.getElementsByTagName('th');
+                    const tds = row.getElementsByTagName('td');
+                    return ths.length === 1 && tds.length === 1;
+                });
+                if (isPropertyTable) {
+                    markdown += '\n'; // Linha em branco antes da tabela
+                    rows.forEach((row, idx) => {
+                        const th = row.getElementsByTagName('th')[0];
+                        const td = row.getElementsByTagName('td')[0];
+                        const key = th ? th.textContent?.replace(/\n/g, ' ').trim() : '';
+                        const value = td ? td.textContent?.replace(/\n/g, ' ').trim() : '';
+                        if (key || value) {
+                            markdown += `**${key}:** ${value}\n\n`;
+                        }
+                    });
+                    return markdown;
+                }
+                // Caso contrário, trata como tabela tradicional
+                const headers = Array.from(rows[0].getElementsByTagName('th'));
+                if (headers.length > 0) {
+                    markdown += '| ' + headers.map(h => h.textContent?.trim() || '').join(' | ') + ' |\n';
+                    markdown += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
+                }
+                rows.forEach((row, idx) => {
+                    if (headers.length > 0 && idx === 0) {return;}
+                    const cells = Array.from(row.getElementsByTagName('td'));
+                    if (cells.length > 0) {
+                        markdown += '| ' + cells.map(c => c.textContent?.trim() || '').join(' | ') + ' |\n';
+                    }
+                });
+                return '\n' + markdown + '\n';
+            }
+        });
+
+        // (Re)adiciona a regra customizada para parágrafos <p> (case-insensitive, registrada por último)
+        this.turndownService.addRule('customParagraph', {
+            filter: (node) => node.nodeName.toLowerCase() === 'p',
+            replacement: (content, node) => {
+                const trimmedContent = content.trim();
+                // Se o parágrafo está vazio ou auto-fechado
+                if (!trimmedContent) {
+                    return '\n';
+                }
+                // Parágrafo com conteúdo
+                return `\n${trimmedContent}\n`;
+            }
+        });
     }
 
     /**
@@ -146,23 +190,31 @@ export class ConfluenceToMarkdownConverter {
             throw new Error('O conteúdo do Confluence está vazio.');
         }
 
-        // Carrega o conteúdo no Cheerio para manipulação
-        const $ = cheerio.load(confluenceContent, {
-            xmlMode: true,
-            decodeEntities: false
+        // Pré-processa todas as macros de status, mesmo aninhadas
+        $('ac\\:structured-macro[ac\\:name="status"]').each((i, el) => {
+            const $el = $(el);
+            const title = $el.find('ac\\:parameter[ac\\:name="title"]').text() || '';
+            const colour = $el.find('ac\\:parameter[ac\\:name="colour"]').text() || '';
+            // Capitaliza o título
+            const capTitle = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
+            const colorMap: Record<string, string> = {
+                'blue': '🔵',
+                'green': '🟢',
+                'yellow': '🟡',
+                'red': '🔴',
+                'purple': '🟣',
+            };
+            const emoji = colorMap[colour?.toLowerCase?.()] || '⚪';
+            // Garante sempre uma linha em branco antes
+            $el.replaceWith(`<p>${capTitle} ${emoji}</p>`);
         });
-
-        this.outputChannel.appendLine('[Convert] Conteúdo carregado no Cheerio');
-
-        // Remove o bloco de parâmetros CSP que não é parte do conteúdo
-        $('csp\\:parameters').remove();
 
         // Converte <time> para seu texto
         $('time').each((i, el) => {
             const dateTime = $(el).attr('datetime');
             $(el).replaceWith(dateTime || '');
         });
-        
+
         // Trata links do Jira que são exibidos como cards
         $('a[data-card-appearance="block"]').each((i, el) => {
             const href = $(el).attr('href');
@@ -182,16 +234,41 @@ export class ConfluenceToMarkdownConverter {
             }
         });
 
+        // --- AJUSTE DE ESTRUTURA: Remove <p> aninhados e <p> vazios ---
+        // Move <p> internos para fora do pai
+        $('p p').each(function (this: cheerio.Element) {
+            $(this).parent().after($(this));
+        });
+        // Remove <p> que ficou vazio após mover os filhos
+        $('p').each(function (this: cheerio.Element) {
+            if ($(this).text().trim() === '') {
+                $(this).remove();
+            }
+        });
+
+        // Remove wrappers <ac:rich-text-body>, mantendo apenas o conteúdo interno
+        $('ac\\:rich-text-body').each(function (this: cheerio.Element) {
+            const html = $(this).html();
+            if (html !== null) {
+                $(this).replaceWith(html);
+            } else {
+                $(this).remove();
+            }
+        });
+
         // Obtém o HTML processado
         const processedHtml = $.html() || '';
         this.outputChannel.appendLine(`[Convert] Tamanho do HTML processado: ${processedHtml.length} caracteres`);
+        this.outputChannel.appendLine(`${processedHtml}`);
+        this.outputChannel.appendLine(`[Convert] Fim do HTML processado`);
+
 
         if (!processedHtml) {
             throw new Error('Não foi possível processar o conteúdo HTML.');
         }
 
         // Converte para Markdown
-        let markdown = this.turndownService.turndown(processedHtml);
+        let markdown = this.turndownService.turndown('<body>' + processedHtml + '</body>');
         this.outputChannel.appendLine(`[Convert] Tamanho do Markdown gerado: ${markdown.length} caracteres`);
 
         // Gera o TOC após a conversão para Markdown
@@ -213,7 +290,7 @@ export class ConfluenceToMarkdownConverter {
             let isFirstH1 = true;
             headings.forEach(h => {
                 if (h.level === 1) {
-                    if (!isFirstH1) tocMarkdown += '\n';
+                    if (!isFirstH1) {tocMarkdown += '\n';}
                     isFirstH1 = false;
                 }
                 const indent = '  '.repeat(h.level - 1);

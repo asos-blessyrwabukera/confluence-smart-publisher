@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { marked, MarkedOptions } from 'marked';
-import xmlEscape from 'xml-escape';
 
 export class MarkdownConverter {
     private static instance: MarkdownConverter;

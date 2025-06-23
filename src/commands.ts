@@ -63,7 +63,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 const page = await client.getPageByTitle(spaceKey, title);
                 if (!page) {throw new Error('Page not found.');}
                 const pageId = page.id;
-                const filePath = await client.downloadConfluencePage(pageId, BodyFormat.STORAGE, uri.fsPath);
+                const filePath = await client.downloadConfluencePage(pageId, BodyFormat.ATLAS_DOC_FORMAT, uri.fsPath);
                 outputChannel.appendLine(`[Download by Title] Page downloaded to: "${filePath}"`);
                 vscode.window.showInformationMessage(`Page downloaded to: "${filePath}"`);
             });
@@ -98,7 +98,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
             }, async () => {
                 outputChannel.appendLine(`[Download by ID] Searching page: ID=${pageId}`);
                 const client = new ConfluenceClient();
-                const filePath = await client.downloadConfluencePage(pageId, BodyFormat.STORAGE, uri.fsPath);
+                const filePath = await client.downloadConfluencePage(pageId, BodyFormat.ATLAS_DOC_FORMAT , uri.fsPath);
                 outputChannel.appendLine(`[Download by ID] Page downloaded to: "${filePath}"`);
                 vscode.window.showInformationMessage(`Page downloaded to: "${filePath}"`);
             });
@@ -142,7 +142,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 outputChannel.appendLine(`[Create Page] Downloading template: ID=${modeloId}`);
                 const client = new ConfluenceClient();
                 const tempDir = uri.fsPath;
-                const modeloPath = await client.downloadConfluencePage(modeloId, BodyFormat.STORAGE, tempDir);
+                const modeloPath = await client.downloadConfluencePage(modeloId, BodyFormat.ATLAS_DOC_FORMAT, tempDir);
                 const fs = await import('fs');
                 let conteudo = fs.readFileSync(modeloPath, 'utf-8');
                 conteudo = conteudo.replace(/<csp:file_id>.*?<\/csp:file_id>\s*/s, '');
@@ -171,7 +171,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
             const editor = await vscode.window.showTextDocument(document, { preview: false });
             const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
             const numberChapters = config.get('format.numberChapters', false);
-            const formatted = formatConfluenceDocument(document.getText(), numberChapters);
+            const formatted = formatConfluenceDocument(document.getText());
             await editor.edit(editBuilder => {
                 const start = new vscode.Position(0, 0);
                 const end = new vscode.Position(document.lineCount, 0);
@@ -225,17 +225,17 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
                 const numberChapters = config.get('format.numberChapters', false);
                 // Baixa o arquivo publicado
-                const publishedPath = await client.downloadConfluencePage(fileId, BodyFormat.STORAGE, temp);
+                const publishedPath = await client.downloadConfluencePage(fileId, BodyFormat.ATLAS_DOC_FORMAT, temp);
 
                 // Lê e formata o conteúdo local
                 const localContent = fs.readFileSync(uri.fsPath, 'utf-8');
-                const formattedLocal = formatConfluenceDocument(localContent, numberChapters);
+                const formattedLocal = formatConfluenceDocument(localContent);
                 const formattedLocalPath = path.join(temp, 'local_formatted_' + path.basename(uri.fsPath));
                 fs.writeFileSync(formattedLocalPath, formattedLocal, { encoding: 'utf-8' });
 
                 // Lê e formata o conteúdo publicado
                 const publishedContent = fs.readFileSync(publishedPath, 'utf-8');
-                const formattedPublished = formatConfluenceDocument(publishedContent, numberChapters);
+                const formattedPublished = formatConfluenceDocument(publishedContent);
                 const formattedPublishedPath = path.join(temp, 'published_formatted_' + path.basename(publishedPath));
                 fs.writeFileSync(formattedPublishedPath, formattedPublished, { encoding: 'utf-8' });
 

@@ -2,9 +2,8 @@ import { workspace } from 'vscode';
 import { mkdirSync, writeFileSync, createReadStream, existsSync, readFileSync, promises as fsPromises } from 'fs';
 import { isAbsolute, join, dirname, basename, extname } from 'path';
 import FormData from 'form-data';
-// @ts-ignore
-import xmlEscape from 'xml-escape';
 import { decodeHtmlEntities } from './confluenceFormatter';
+import { convertAdfToMarkdown } from './adf-to-md/convert-adf-to-md';
 
 export enum BodyFormat {
     VIEW = 'view',
@@ -46,7 +45,7 @@ export class ConfluenceClient {
         return data.results?.[0] || null;
     }
 
-    async getPageById(pageId: string, bodyFormat: BodyFormat = BodyFormat.STORAGE): Promise<any | null> {
+    async getPageById(pageId: string, bodyFormat: BodyFormat = BodyFormat.ATLAS_DOC_FORMAT): Promise<any | null> {
         const { default: fetch } = await import('node-fetch');
         const url = `${this.baseUrl}/api/v2/pages/${pageId}?body-format=${bodyFormat}`;
         const resp = await fetch(url, { headers: { ...this.getAuthHeader(), 'Content-Type': 'application/json' } });
@@ -55,7 +54,7 @@ export class ConfluenceClient {
         return await resp.json() as any;
     }
 
-    async downloadConfluencePage(pageId: string, bodyFormat: BodyFormat = BodyFormat.STORAGE, outputDir: string = 'Downloaded'): Promise<string> {
+    async downloadConfluencePage(pageId: string, bodyFormat: BodyFormat = BodyFormat.ATLAS_DOC_FORMAT, outputDir: string = 'Downloaded'): Promise<string> {
         const { default: fetch } = await import('node-fetch');
         const page = await this.getPageById(pageId, bodyFormat);
         if (!page) {throw new Error(`Page with ID ${pageId} not found.`);}
@@ -105,43 +104,57 @@ export class ConfluenceClient {
             }
         } catch {}
         // 4. properties
-        let propertiesXml = '';
+        let propertiesArr: { key: string; value: string }[] = [];
         try {
             const props = await this.getContentProperties(pageId);
             if (props.length > 0) {
-                const keys: string[] = [];
-                const values: string[] = [];
                 for (const prop of props) {
                     if (prop.key && prop.value !== undefined) {
-                        keys.push(xmlEscape(String(prop.key)));
-                        // value pode ser objeto ou string
                         let val = typeof prop.value === 'object' ? JSON.stringify(prop.value) : String(prop.value);
-                        values.push(xmlEscape(val));
+                        propertiesArr.push({ key: String(prop.key), value: val });
                     }
                 }
-                propertiesXml = `<csp:properties>\n`;
-                for (let i = 0; i < keys.length; i++) {
-                    propertiesXml += `  <csp:key>${keys[i]}</csp:key>\n  <csp:value>${values[i]}</csp:value>\n`;
-                }
-                propertiesXml += `</csp:properties>\n`;
-            } else {
-                propertiesXml = `<csp:properties>\n  <csp:key></csp:key>\n  <csp:value></csp:value>\n</csp:properties>\n`;
             }
         } catch {
-            propertiesXml = `<csp:properties>\n  <csp:key></csp:key>\n  <csp:value></csp:value>\n</csp:properties>\n`;
+            // Se não conseguir extrair propriedades, mantém array vazio
         }
-        // Monta o bloco completo
-        const cspBlock =
-            `<csp:parameters xmlns:csp="https://confluence.smart.publisher/csp">\n` +
-            `  <csp:file_id>${xmlEscape(String(fileId))}</csp:file_id>\n` +
-            `  <csp:labels_list>${xmlEscape(labelsList)}</csp:labels_list>\n` +
-            `  <csp:parent_id>${xmlEscape(String(parentId))}</csp:parent_id>\n` +
-                propertiesXml +
-            `</csp:parameters>\n`;
-
-        // Junta o bloco csp com o conteúdo da página
-        let conteudoFinal = cspBlock + '\n' + conteudo;
+        // Monta o objeto completo com metadados e conteúdo
+        const cspBlockObj = {
+            csp: {
+                file_id: String(fileId),
+                labels_list: labelsList,
+                parent_id: String(parentId),
+                properties: propertiesArr
+            },
+            content: (() => {
+                try {
+                    return JSON.parse(conteudo);
+                } catch {
+                    return conteudo; // fallback se não for JSON válido
+                }
+            })()
+        };
+        const conteudoFinal = JSON.stringify(cspBlockObj, null, 2);
         writeFileSync(filePath, conteudoFinal, { encoding: 'utf-8' });
+
+        // NOVO: Converter para Markdown se for JSON ADF
+        if (formato === BodyFormat.ATLAS_DOC_FORMAT) {
+            try {
+                const adfJson = JSON.parse(conteudo);
+                const cspData = {
+                    file_id: String(fileId),
+                    labels_list: labelsList,
+                    parent_id: String(parentId),
+                    properties: propertiesArr
+                };
+                const markdown = await convertAdfToMarkdown(adfJson, cspData, this.baseUrl);
+                const mdFileName = `${tituloSanitizado}.md`;
+                const mdFilePath = join(baseDir, mdFileName);
+                writeFileSync(mdFilePath, markdown, { encoding: 'utf-8' });
+            } catch (e) {
+                // Se não for JSON válido, ignora a conversão
+            }
+        }
         return filePath;
     }
 
