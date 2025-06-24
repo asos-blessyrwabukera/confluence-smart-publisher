@@ -4,7 +4,7 @@ import path from 'path';
 import { formatConfluenceDocument, decodeHtmlEntities } from './confluenceFormatter';
 import { getEmojiPickerHtml } from './webview';
 import { MarkdownConverter } from './markdownConverter';
-import { ConfluenceToMarkdownConverter } from './confluenceToMarkdownConverter';
+import { AdfToMarkdownConverter } from './adf-md-converter/adf-to-md-converter';
 
 export function registerCommands(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
     // Command to publish .confluence file
@@ -429,7 +429,6 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
             vscode.window.showErrorMessage('Select a .confluence file to convert.');
             return;
         }
-
         try {
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
@@ -437,13 +436,24 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 cancellable: false
             }, async () => {
                 outputChannel.appendLine(`[Convert] Starting conversion of file: "${uri.fsPath}"`);
-                const converter = new ConfluenceToMarkdownConverter(outputChannel);
-                const markdownFilePath = await converter.convertFile(uri.fsPath);
-                outputChannel.appendLine(`[Convert] File successfully converted: "${path.basename(markdownFilePath)}"`);
-                vscode.window.showInformationMessage(`File successfully converted: "${path.basename(markdownFilePath)}"`);
-                
+                const fs = await import('fs');
+                const path = await import('path');
+                const content = fs.readFileSync(uri.fsPath, 'utf-8');
+                let adfJson;
+                try {
+                    adfJson = JSON.parse(content);
+                } catch (e) {
+                    throw new Error('O arquivo .confluence não está em formato JSON ADF válido.');
+                }
+                const converter = new AdfToMarkdownConverter();
+                const markdownBlock = await converter.convertNode(adfJson, 0, '');
+                const markdown = markdownBlock.markdown;
+                const outputPath = uri.fsPath.replace(/\.confluence$/, '.md');
+                fs.writeFileSync(outputPath, markdown, 'utf-8');
+                outputChannel.appendLine(`[Convert] File successfully converted: "${path.basename(outputPath)}"`);
+                vscode.window.showInformationMessage(`File successfully converted: "${path.basename(outputPath)}"`);
                 // Opens the converted file
-                const doc = await vscode.workspace.openTextDocument(markdownFilePath);
+                const doc = await vscode.workspace.openTextDocument(outputPath);
                 await vscode.window.showTextDocument(doc);
             });
         } catch (e: any) {

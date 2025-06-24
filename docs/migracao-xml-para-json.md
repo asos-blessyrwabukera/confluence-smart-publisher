@@ -106,7 +106,7 @@ Abaixo estão as macros do Confluence que já estão cobertas, as que precisam d
 - [x] Implementar tratamento para **links especiais** (Jira, Confluence).
 - [x] Implementar conversão de **user mention** (se necessário).
 - [x] Implementar conversão de **property table**.
-- [ ] Implementar uma classe de conversão, que garanta que todas as expecializações delas convertam os filhos, sem que a conversão em si precise se preocupar se ela deve trar ou não os seus filhos
+- [x] Implementar uma classe de conversão, que garanta que todas as expecializações delas convertam os filhos, sem que a conversão em si precise se preocupar se ela deve trar ou não os seus filhos
 ---
 
 ## Checklist de Migração
@@ -119,12 +119,12 @@ Abaixo estão as macros do Confluence que já estão cobertas, as que precisam d
 - [x] 6. Remover dependências não utilizadas (`xml-escape`, `cheerio`, `fast-xml-parser`)
 - [ ] 7. Atualizar exemplos e instruções no `README.md` para JSON
 - [ ] 8. Testar toda a extensão com arquivos `.confluence` em JSON
-- [ ] 9. Revisar cobertura de macros especiais (expand, panel, status, code, math, task, emoticon, etc.) no fluxo ADF
-- [ ] 10. Garantir conversão correta de tabelas de propriedades no fluxo ADF
-- [ ] 11. Validar tratamento de links especiais (Jira, Confluence, etc.) no fluxo ADF
-- [ ] 12. Garantir conversão correta de datas/times no fluxo ADF
-- [ ] 13. Validar blocos de código (linguagem/conteúdo) no fluxo ADF
-- [ ] 14. Garantir que parágrafos vazios não gerem Markdown desnecessário
+- [x] 9. Revisar cobertura de macros especiais (expand, panel, status, code, math, task, emoticon, etc.) no fluxo ADF
+- [x] 10. Garantir conversão correta de tabelas de propriedades no fluxo ADF
+- [x] 11. Validar tratamento de links especiais (Jira, Confluence, etc.) no fluxo ADF
+- [x] 12. Garantir conversão correta de datas/times no fluxo ADF
+- [x] 13. Validar blocos de código (linguagem/conteúdo) no fluxo ADF
+- [x] 14. Garantir que parágrafos vazios não gerem Markdown desnecessário
 - [ ] 15. Padronizar reversibilidade para JSON puro, se necessário
 
 ---

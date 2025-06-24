@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, createReadStream, existsSync, readFileSync, p
 import { isAbsolute, join, dirname, basename, extname } from 'path';
 import FormData from 'form-data';
 import { decodeHtmlEntities } from './confluenceFormatter';
-import { convertAdfToMarkdown } from './adf-to-md/convert-adf-to-md';
+import { AdfToMarkdownConverter } from './adf-md-converter/adf-to-md-converter';
 
 export enum BodyFormat {
     VIEW = 'view',
@@ -138,23 +138,25 @@ export class ConfluenceClient {
         writeFileSync(filePath, conteudoFinal, { encoding: 'utf-8' });
 
         // NOVO: Converter para Markdown se for JSON ADF
-        if (formato === BodyFormat.ATLAS_DOC_FORMAT) {
-            try {
-                const adfJson = JSON.parse(conteudo);
-                const cspData = {
-                    file_id: String(fileId),
-                    labels_list: labelsList,
-                    parent_id: String(parentId),
-                    properties: propertiesArr
-                };
-                const markdown = await convertAdfToMarkdown(adfJson, cspData, this.baseUrl);
-                const mdFileName = `${tituloSanitizado}.md`;
-                const mdFilePath = join(baseDir, mdFileName);
-                writeFileSync(mdFilePath, markdown, { encoding: 'utf-8' });
-            } catch (e) {
-                // Se não for JSON válido, ignora a conversão
-            }
-        }
+        // if (formato === BodyFormat.ATLAS_DOC_FORMAT) {
+        //     try {
+        //         const adfJson = JSON.parse(conteudo);
+        //         const cspData = {
+        //             file_id: String(fileId),
+        //             labels_list: labelsList,
+        //             parent_id: String(parentId),
+        //             properties: propertiesArr
+        //         };
+        //         const converter = new AdfToMarkdownConverter();
+        //         const markdownBlock = await converter.convertNode(adfJson, 0, this.baseUrl);
+        //         const markdown = markdownBlock.markdown;
+        //         const mdFileName = `${tituloSanitizado}.md`;
+        //         const mdFilePath = join(baseDir, mdFileName);
+        //         writeFileSync(mdFilePath, markdown, { encoding: 'utf-8' });
+        //     } catch (e) {
+        //         // Se não for JSON válido, ignora a conversão
+        //     }
+        // }
         return filePath;
     }
 
