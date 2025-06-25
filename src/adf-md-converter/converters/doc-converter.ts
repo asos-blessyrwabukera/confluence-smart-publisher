@@ -10,5 +10,6 @@ import { AdfNode, MarkdownBlock } from '../types';
 
 export default function convertDoc(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
   const markdown = children.map(child => child.markdown).join('\n\n');
-  return { yamlBlock: '', markdown };
+  const adfInfo = { adfType: node.type };
+  return { yamlBlock: '', markdown, adfInfo };
 } 

@@ -19,5 +19,10 @@ export default function convertStatus(node: AdfNode, children: MarkdownBlock[]):
     yamlBlock = generateYamlBlock({ adfType: 'status', ...node.attrs });
   }
   const markdown = icon ? `${icon} ${text}` : text;
-  return { yamlBlock, markdown };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown, adfInfo };
 } 

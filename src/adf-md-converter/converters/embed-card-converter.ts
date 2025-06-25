@@ -38,5 +38,10 @@ export default async function convertEmbedCard(
   });
   const markdown = `[${text}](${resolvedUrl})`;
   const yamlBlock = yaml ? `<!--\n---\n${Object.entries(yaml).map(([k,v]) => `${k}: ${JSON.stringify(v)}`).join('\n')}\n...\n-->` : '';
-  return { yamlBlock, markdown };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown, adfInfo };
 } 

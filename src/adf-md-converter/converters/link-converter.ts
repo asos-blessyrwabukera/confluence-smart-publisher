@@ -28,5 +28,10 @@ export default async function convertLink(
   // Se houver texto nos filhos, prioriza ele
   const linkText = textFromChildren.trim() ? textFromChildren : text;
   const yamlBlock = yaml ? `<!--\n---\n${Object.entries(yaml).map(([k,v]) => `${k}: ${JSON.stringify(v)}`).join('\n')}\n...\n-->` : '';
-  return { yamlBlock, markdown: `[${linkText}](${url})` };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown: `[${linkText}](${url})`, adfInfo };
 } 

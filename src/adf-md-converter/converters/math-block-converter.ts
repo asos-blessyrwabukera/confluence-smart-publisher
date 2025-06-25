@@ -21,5 +21,10 @@ export default function convertMathBlock(node: AdfNode, children: MarkdownBlock[
     yamlBlock = generateYamlBlock({ adfType: node.type, ...node.attrs });
   }
   const markdown = `$$\n${latex}\n$$`;
-  return { yamlBlock, markdown };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown, adfInfo };
 } 

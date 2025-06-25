@@ -17,6 +17,12 @@ export interface AdfNode {
 export interface MarkdownBlock {
   yamlBlock: string;
   markdown: string;
+  adfInfo?: {
+    adfType: string;
+    localId?: string;
+    id?: string;
+    [key: string]: any;
+  };
 }
 
 /**

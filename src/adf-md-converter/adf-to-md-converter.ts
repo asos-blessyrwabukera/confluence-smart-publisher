@@ -38,6 +38,24 @@ import convertMathBlock from './converters/math-block-converter';
 
 export class AdfToMarkdownConverter {
   /**
+   * Renderiza um bloco Markdown com comentários HTML e YAML, conforme a especificação.
+   */
+  private renderBlock(block: MarkdownBlock): string {
+    const { yamlBlock, markdown, adfInfo } = block;
+    const adfType = adfInfo?.adfType || 'unknown';
+    const localId = adfInfo?.localId ? ` localId=\"${adfInfo.localId}\"` : '';
+    const id = adfInfo?.id ? ` id=\"${adfInfo.id}\"` : '';
+    const startComment = `<!-- ADF-START adfType=\"${adfType}\"${localId}${id} -->`;
+    const endComment = `<!-- ADF-END adfType=\"${adfType}\"${localId}${id} -->`;
+    return [
+      startComment,
+      yamlBlock,
+      markdown,
+      endComment
+    ].filter(Boolean).join('\n');
+  }
+
+  /**
    * Converts a single ADF node to MarkdownBlock, processing children first.
    * @param node The ADF node to convert
    * @param level The nesting level (for lists)
@@ -45,10 +63,20 @@ export class AdfToMarkdownConverter {
   async convertNode(node: AdfNode, level: number = 0, confluenceBaseUrl: string = ''): Promise<MarkdownBlock> {
     const children = await this.convertChildren(node, level, confluenceBaseUrl);
     const converter = this.getConverter(node.type);
+    let block: MarkdownBlock;
     if (node.type === 'bulletList' || node.type === 'orderedList' || node.type === 'taskList') {
-      return await Promise.resolve((converter as any)(node, children, level, confluenceBaseUrl));
+      block = await Promise.resolve((converter as any)(node, children, level, confluenceBaseUrl));
+    } else {
+      block = await Promise.resolve(converter(node, children, undefined, confluenceBaseUrl));
     }
-    return await Promise.resolve(converter(node, children, undefined, confluenceBaseUrl));
+    // Se for doc, não aplica renderBlock aqui (será feito na montagem final)
+    if (node.type === 'doc') {
+      // Para doc, renderiza todos os filhos já formatados
+      const markdown = children.map(child => this.renderBlock(child)).join('\n\n');
+      return { yamlBlock: '', markdown, adfInfo: { adfType: 'doc' } };
+    }
+    // Para outros tipos, aplica renderBlock
+    return { ...block, markdown: this.renderBlock(block) };
   }
 
   /**

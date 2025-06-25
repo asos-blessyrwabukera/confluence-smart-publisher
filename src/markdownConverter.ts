@@ -36,7 +36,7 @@ export class MarkdownConverter {
             const htmlContent = marked.parse(markdownContent) as string;
             
             // Convert HTML to Confluence Storage Format
-            const confluenceContent = this.convertHtmlToConfluence(htmlContent);
+            const confluenceContent = await this.convertHtmlToConfluence(htmlContent);
             
             // Generate the new file path
             const confluenceFilePath = this.generateConfluenceFilePath(markdownFilePath);
@@ -56,19 +56,16 @@ export class MarkdownConverter {
      * @param htmlContent HTML content
      * @returns Content in Confluence Storage Format
      */
-    private convertHtmlToConfluence(htmlContent: string): string {
-        // Adiciona a estrutura csp:parameters no início do documento
-        const cspParameters = `<csp:parameters xmlns:csp="https://confluence.smart.publisher/csp">
-    <csp:file_id></csp:file_id>
-    <csp:parent_id></csp:parent_id>
-    <csp:labels_list></csp:labels_list>
-    <csp:properties>
-        <csp:key>content-appearance-published</csp:key>
-        <csp:value>fixed-width</csp:value>
-        <csp:key>content-appearance-draft</csp:key>
-        <csp:value>fixed-width</csp:value>
-    </csp:properties>
-</csp:parameters>`;
+    private async convertHtmlToConfluence(htmlContent: string): Promise<string> {
+        // Adiciona a estrutura csp:parameters no início do documento usando a função utilitária
+        const { createXMLCSPBlock, createDefaultCSPProperties } = await import('./csp-utils.js');
+        const cspMetadata = {
+            file_id: '',
+            parent_id: '',
+            labels_list: '',
+            properties: createDefaultCSPProperties()
+        };
+        const cspParameters = createXMLCSPBlock(cspMetadata);
 
         // Retorna o conteúdo formatado sem o cabeçalho XML e sem o macro info
         return `${cspParameters}\n\n${htmlContent}`;

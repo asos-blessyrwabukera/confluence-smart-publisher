@@ -15,5 +15,10 @@ export default function convertTableRow(node: AdfNode, children: MarkdownBlock[]
     yamlBlock = generateYamlBlock({ adfType: 'tableRow', ...node.attrs });
   }
   const markdown = '| ' + children.map(child => child.markdown).join(' | ') + ' |';
-  return { yamlBlock, markdown };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown, adfInfo };
 } 

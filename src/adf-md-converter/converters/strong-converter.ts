@@ -16,5 +16,10 @@ export default function convertStrong(node: AdfNode, children: MarkdownBlock[]):
   }
   const text = children.map(child => child.markdown).join('');
   const markdown = `**${text}**`;
-  return { yamlBlock, markdown };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown, adfInfo };
 } 

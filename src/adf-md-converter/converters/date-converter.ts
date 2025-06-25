@@ -22,5 +22,10 @@ export default function convertDate(node: AdfNode, children: MarkdownBlock[]): M
   if (node.attrs && Object.keys(node.attrs).length > 0) {
     yamlBlock = generateYamlBlock({ adfType: 'date', ...node.attrs });
   }
-  return { yamlBlock, markdown: text };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown: text, adfInfo };
 } 

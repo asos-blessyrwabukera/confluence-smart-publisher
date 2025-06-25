@@ -15,5 +15,10 @@ export default function convertHardBreak(node: AdfNode, children: MarkdownBlock[
   if (node.attrs && Object.keys(node.attrs).length > 0) {
     yamlBlock = generateYamlBlock({ adfType: 'hardBreak', ...node.attrs });
   }
-  return { yamlBlock, markdown: text };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown: text, adfInfo };
 } 

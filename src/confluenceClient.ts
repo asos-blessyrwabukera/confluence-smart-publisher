@@ -118,23 +118,22 @@ export class ConfluenceClient {
         } catch {
             // Se não conseguir extrair propriedades, mantém array vazio
         }
-        // Monta o objeto completo com metadados e conteúdo
-        const cspBlockObj = {
-            csp: {
-                file_id: String(fileId),
-                labels_list: labelsList,
-                parent_id: String(parentId),
-                properties: propertiesArr
-            },
-            content: (() => {
-                try {
-                    return JSON.parse(conteudo);
-                } catch {
-                    return conteudo; // fallback se não for JSON válido
-                }
-            })()
+        // Monta o objeto completo com metadados e conteúdo usando a função utilitária
+        const { createJSONCSPBlock } = await import('./csp-utils.js');
+        const cspMetadata = {
+            file_id: String(fileId),
+            labels_list: labelsList,
+            parent_id: String(parentId),
+            properties: propertiesArr
         };
-        const conteudoFinal = JSON.stringify(cspBlockObj, null, 2);
+        const contentParsed = (() => {
+            try {
+                return JSON.parse(conteudo);
+            } catch {
+                return conteudo; // fallback se não for JSON válido
+            }
+        })();
+        const conteudoFinal = createJSONCSPBlock(cspMetadata, contentParsed);
         writeFileSync(filePath, conteudoFinal, { encoding: 'utf-8' });
 
         // NOVO: Converter para Markdown se for JSON ADF
@@ -287,35 +286,9 @@ export class ConfluenceClient {
         }
     }
 
-    // Funções auxiliares para extração de tags, listas e propriedades do conteúdo
-    private extractTag(tag: string, content: string): string | null {
-        const regex = new RegExp(`<${tag}[^>]*>(.*?)</${tag}>`, 's');
-        const match = content.match(regex);
-        return match ? match[1] : null;
-    }
-
-    private extractList(tag: string, content: string): string[] {
-        const value = this.extractTag(tag, content);
-        return value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
-    }
-
-    private extractProperties(content: string): { key: string, value: string }[] {
-        const props: { key: string, value: string }[] = [];
-        const regex = /<csp:properties>([\s\S]*?)<\/csp:properties>/g;
-        const match = regex.exec(content);
-        if (!match) {return props;}
-
-        const propContent = match[1];
-        const keyRegex = /<csp:key>(.*?)<\/csp:key>\s*<csp:value>(.*?)<\/csp:value>/g;
-        let keyMatch;
-        while ((keyMatch = keyRegex.exec(propContent)) !== null) {
-            const key = keyMatch[1].trim();
-            const value = keyMatch[2].trim();
-            if (key) {
-                props.push({ key, value });
-            }
-        }
-        return props;
+    private async extractProperties(content: string): Promise<{ key: string, value: string }[]> {
+        const { extractProperties } = await import('./csp-utils.js');
+        return extractProperties(content);
     }
 
     async createPageFromFile(filePath: string): Promise<any> {
@@ -326,13 +299,14 @@ export class ConfluenceClient {
 
         content = content.replace(/\n +/g, '\n');
 
-        // Extrair informações
-        const parentId = this.extractTag('csp:parent_id', content);
+        // Extrair informações usando função utilitária
+        const { extractParentId, extractLabels } = await import('./csp-utils.js');
+        const parentId = extractParentId(content);
         if (!parentId || !/^[0-9]+$/.test(parentId)) {
-            throw new Error(`Invalid or missing parentId in <csp:parent_id> tag: ${parentId}`);
+            throw new Error(`Invalid or missing parentId tag: ${parentId}`);
         }
-        const labelsList = this.extractList('csp:labels_list', content);
-        const properties = this.extractProperties(content);
+        const labelsList = extractLabels(content);
+        const properties = await this.extractProperties(content);
 
         // Obter spaceId a partir do parentId
         const parentPage = await this.getPageById(parentId);
@@ -410,10 +384,9 @@ export class ConfluenceClient {
         let content = readFileSync(filePath, 'utf-8');
 
         content = content.replace(/\n +/g, '\n');
-        const match = content.match(/<csp:file_id>(.*?)<\/csp:file_id>/);
-        if (!match) {throw new Error('Tag <csp:file_id> not found in file.');}
-        const pageId = match[1].trim();
-        if (!/^\d+$/.test(pageId)) {throw new Error(`Invalid page ID in <csp:file_id> tag: ${pageId}`);}
+        const { extractFileId, extractLabels } = await import('./csp-utils.js');
+        const pageId = extractFileId(content);
+        if (!pageId || !/^\d+$/.test(pageId)) {throw new Error(`Invalid or missing page ID in tag: ${pageId}`);}
         let contentToSend = content.replace(/<csp:parameters[\s\S]*?<\/csp:parameters>\s*/g, '');
 
         const pasta = dirname(filePath);
@@ -424,8 +397,8 @@ export class ConfluenceClient {
         if (!spaceId) {throw new Error(`spaceId not found for page ${pageId}`);}
         const title = page.title;
         const version = page.version?.number || 1;
-        const labelsList = this.extractList('csp:labels_list', content);
-        const properties = this.extractProperties(content);
+        const labelsList = extractLabels(content);
+        const properties = await this.extractProperties(content);
         const payload = {
             id: pageId,
             status: 'current',
@@ -505,11 +478,6 @@ export class ConfluenceClient {
 }
 
 export async function publishConfluenceFile(filePath: string) {
-    function extractFileId(conteudo: string): string | null {
-        const regex = /<csp:file_id>(\d+)<\/csp:file_id>/;
-        const match = conteudo.match(regex);
-        return match ? match[1] : null;
-    }
 
     async function insertFileIdInFile(filePath: string, fileId: string) {
         let conteudo = await fsPromises.readFile(filePath, 'utf-8');
@@ -528,18 +496,15 @@ export async function publishConfluenceFile(filePath: string) {
             );
             conteudo = conteudo.replace(cspRegex, newCspContent);
         } else {
-            // Se não existe a estrutura do CSP, cria uma nova
-            const cspBlock = `<csp:parameters xmlns:csp="https://confluence.smart.publisher/csp">\n` +
-                `  <csp:file_id>${fileId}</csp:file_id>\n` +
-                `  <csp:labels_list></csp:labels_list>\n` +
-                `  <csp:parent_id></csp:parent_id>\n` +
-                `  <csp:properties>\n` +
-                `    <csp:key>content-appearance-published</csp:key>\n` +
-                `    <csp:value>fixed-width</csp:value>\n` +
-                `    <csp:key>content-appearance-draft</csp:key>\n` +
-                `    <csp:value>fixed-width</csp:value>\n` +
-                `  </csp:properties>\n` +
-                `</csp:parameters>\n\n`;
+            // Se não existe a estrutura do CSP, cria uma nova usando a função utilitária
+            const { createXMLCSPBlock, createDefaultCSPProperties } = await import('./csp-utils.js');
+            const cspMetadata = {
+                file_id: fileId,
+                labels_list: '',
+                parent_id: '',
+                properties: createDefaultCSPProperties()
+            };
+            const cspBlock = createXMLCSPBlock(cspMetadata) + '\n\n';
             conteudo = cspBlock + conteudo;
         }
         
@@ -610,6 +575,7 @@ export async function publishConfluenceFile(filePath: string) {
     await updatePropertiesInFile(filePath);
 
     let conteudo = await fsPromises.readFile(filePath, 'utf-8');
+    const { extractFileId } = await import('./csp-utils.js');
     const fileId = extractFileId(conteudo);
     const client = new ConfluenceClient();
     let pageId: string;

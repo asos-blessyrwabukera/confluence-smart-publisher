@@ -15,8 +15,8 @@ export default function convertParagraph(node: AdfNode, children: MarkdownBlock[
     yamlBlock = generateYamlBlock({ adfType: 'paragraph', ...node.attrs });
   }
   const markdown = children.map(child => child.markdown).join('');
-  return { yamlBlock, markdown };
+  const adfInfo: any = { adfType: node.type };
+  if (typeof node.attrs?.localId === 'string') {adfInfo.localId = node.attrs.localId;}
+  if (typeof node.attrs?.id === 'string') {adfInfo.id = node.attrs.id;}
+  return { yamlBlock, markdown, adfInfo };
 }
-
-
-

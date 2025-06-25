@@ -23,5 +23,10 @@ export default function convertTaskList(node: AdfNode, children: MarkdownBlock[]
       .join('\n')
     )
     .join('\n');
-  return { yamlBlock, markdown };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown, adfInfo };
 } 

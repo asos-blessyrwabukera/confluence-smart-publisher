@@ -36,5 +36,10 @@ export default function convertPanel(node: AdfNode, children: MarkdownBlock[]): 
   } else {
     md = '> ';
   }
-  return { yamlBlock, markdown: md };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown: md, adfInfo };
 } 

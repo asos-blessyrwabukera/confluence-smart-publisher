@@ -12,5 +12,10 @@ import { generateYamlBlock } from '../utils';
 export default function convertMention(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
   const text = node.attrs && typeof node.attrs['text'] === 'string' ? node.attrs['text'] as string : '';
   const yamlBlock = generateYamlBlock({ adfType: 'mention', ...node.attrs });
-  return { yamlBlock, markdown: text };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown: text, adfInfo };
 } 

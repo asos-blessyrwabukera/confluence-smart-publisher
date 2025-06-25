@@ -14,6 +14,12 @@ export default function convertTable(node: AdfNode, children: MarkdownBlock[]): 
     yamlBlock = generateYamlBlock({ adfType: 'table', ...node.attrs });
   }
 
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+
   // Property Table: all rows have 2 cells (1 header, 1 cell)
   if (isPropertyTable(node)) {
     let markdown = '\n';
@@ -24,7 +30,7 @@ export default function convertTable(node: AdfNode, children: MarkdownBlock[]): 
         markdown += `**${cells[0]}:** ${cells[1]}\n\n`;
       }
     }
-    return { yamlBlock, markdown };
+    return { yamlBlock, markdown, adfInfo };
   }
 
   // Normal Table: detect header in first row
@@ -45,7 +51,7 @@ export default function convertTable(node: AdfNode, children: MarkdownBlock[]): 
       markdown += children[i].markdown + '\n';
     }
   }
-  return { yamlBlock, markdown };
+  return { yamlBlock, markdown, adfInfo };
 }
 
 

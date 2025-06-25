@@ -20,5 +20,10 @@ export default function convertTaskItem(node: AdfNode, children: MarkdownBlock[]
     text = node.content[0].text;
   }
   const markdown = `[${state}] ${text}`;
-  return { yamlBlock, markdown };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown, adfInfo };
 } 

@@ -344,7 +344,17 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                                 }
                             });
                         } else {
-                            novoContent = `<csp:parameters xmlns:csp=\"https://confluence.smart.publisher/csp\">\n  <csp:properties>\n  ${emojiProps}\n  </csp:properties>\n</csp:parameters>\n` + content;
+                            const { createXMLCSPBlock } = await import('./csp-utils.js');
+                            const cspMetadata = {
+                                file_id: '',
+                                labels_list: '',
+                                parent_id: '',
+                                properties: [
+                                    { key: 'emoji-title-draft', value: codePoint },
+                                    { key: 'emoji-title-published', value: codePoint }
+                                ]
+                            };
+                            novoContent = createXMLCSPBlock(cspMetadata) + '\n' + content;
                         }
 
                         fs.writeFileSync(uri.fsPath, novoContent, { encoding: 'utf-8' });
@@ -438,18 +448,46 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 outputChannel.appendLine(`[Convert] Starting conversion of file: "${uri.fsPath}"`);
                 const fs = await import('fs');
                 const path = await import('path');
+                const yaml = (await import('js-yaml')).default;
                 const content = fs.readFileSync(uri.fsPath, 'utf-8');
+                outputChannel.appendLine(`[DEBUG] Conteúdo do arquivo: ${content.substring(0, 500)}`);
                 let adfJson;
                 try {
                     adfJson = JSON.parse(content);
                 } catch (e) {
                     throw new Error('O arquivo .confluence não está em formato JSON ADF válido.');
                 }
-                const converter = new AdfToMarkdownConverter();
-                const markdownBlock = await converter.convertNode(adfJson, 0, '');
-                const markdown = markdownBlock.markdown;
+                outputChannel.appendLine(`[DEBUG] adfJson: ${JSON.stringify(adfJson, null, 2).substring(0, 500)}`);
+
+                // Converter bloco csp para YAML puro usando a função utilitária
+                let yamlBlock = '';
+                if (adfJson.csp) {
+                    try {
+                        const { createYAMLCSPBlock } = await import('./csp-utils.js');
+                        yamlBlock = createYAMLCSPBlock(adfJson.csp);
+                    } catch (e) {
+                        outputChannel.appendLine(`[DEBUG] Erro ao converter csp para YAML: ${e}`);
+                    }
+                }
+
+                // Converter bloco content para markdown
+                let markdown = '';
+                if (adfJson.content) {
+                    const converter = new AdfToMarkdownConverter();
+                    const markdownBlock = await converter.convertNode(adfJson.content, 0, '');
+                    outputChannel.appendLine(`[DEBUG] markdownBlock: ${JSON.stringify(markdownBlock, null, 2)}`);
+                    markdown = markdownBlock.markdown;
+                } else {
+                    outputChannel.appendLine('[DEBUG] Bloco content não encontrado no JSON.');
+                }
+
                 const outputPath = uri.fsPath.replace(/\.confluence$/, '.md');
-                fs.writeFileSync(outputPath, markdown, 'utf-8');
+                const finalContent = `${yamlBlock.trim()}
+
+${markdown.trim()}
+`;
+                fs.writeFileSync(outputPath, finalContent, 'utf-8');
+
                 outputChannel.appendLine(`[Convert] File successfully converted: "${path.basename(outputPath)}"`);
                 vscode.window.showInformationMessage(`File successfully converted: "${path.basename(outputPath)}"`);
                 // Opens the converted file

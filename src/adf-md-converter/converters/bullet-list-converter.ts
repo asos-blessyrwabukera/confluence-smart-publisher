@@ -28,5 +28,10 @@ export default function convertBulletList(node: AdfNode, children: MarkdownBlock
     yamlBlock = generateYamlBlock({ adfType: 'bulletList', ...node.attrs });
   }
   const markdown = renderBulletList(children, level);
-  return { yamlBlock, markdown };
+  const adfInfo = {
+    adfType: node.type,
+    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
+    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
+  };
+  return { yamlBlock, markdown, adfInfo };
 } 
