@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { marked, MarkedOptions } from 'marked';
+import { createXMLCSPBlock, createDefaultCSPProperties } from './csp-utils';
 
 export class MarkdownConverter {
     private static instance: MarkdownConverter;
@@ -58,7 +59,6 @@ export class MarkdownConverter {
      */
     private async convertHtmlToConfluence(htmlContent: string): Promise<string> {
         // Adiciona a estrutura csp:parameters no início do documento usando a função utilitária
-        const { createXMLCSPBlock, createDefaultCSPProperties } = await import('./csp-utils.js');
         const cspMetadata = {
             file_id: '',
             parent_id: '',

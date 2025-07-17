@@ -1,15 +1,13 @@
 /**
- * Converts a text ADF node to MarkdownBlock.
- * Applies marks (code, bold, italic, etc) as in the legacy logic.
- * If there are attributes, generates a yamlBlock with adfType and attrs.
+ * Converts a text ADF node to markdown.
+ * YAML generation is handled centrally by AdfToMarkdownConverter.
  * @param node The text ADF node
  * @param children The already converted children blocks (should be empty for text)
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock } from '../types';
-import { generateYamlBlock } from '../utils';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 
-export default function convertText(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
+export default function convertText(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   let text = node.text || '';
   if (Array.isArray(node.marks)) {
     for (const mark of node.marks) {
@@ -19,18 +17,13 @@ export default function convertText(node: AdfNode, children: MarkdownBlock[]): M
         text = `**${text}**`;
       } else if (mark.type === 'em') {
         text = `*${text}*`;
+      } else if (mark.type === 'link') {
+        // Handle inline links
+        const href = mark.attrs && typeof mark.attrs['href'] === 'string' ? mark.attrs['href'] : '';
+        text = `[${text}](${href})`;
       }
       // TODO: handle other marks if needed
     }
   }
-  let yamlBlock = '';
-  if (node.attrs && Object.keys(node.attrs).length > 0) {
-    yamlBlock = generateYamlBlock({ adfType: 'text', ...node.attrs });
-  }
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown: text, adfInfo };
+  return { markdown: text };
 } 

@@ -1,19 +1,13 @@
 /**
- * Converts a codeBlock ADF node to MarkdownBlock.
- * The markdown is a fenced code block with optional language and content.
- * If there are attributes, generates a yamlBlock with adfType and attrs.
+ * Converts a codeBlock ADF node to markdown.
+ * YAML generation is handled centrally by AdfToMarkdownConverter.
  * @param node The codeBlock ADF node
  * @param children The already converted children blocks (should be empty for codeBlock)
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock } from '../types';
-import { generateYamlBlock } from '../utils';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 
-export default function convertCodeBlock(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
-  let yamlBlock = '';
-  if (node.attrs && Object.keys(node.attrs).length > 0) {
-    yamlBlock = generateYamlBlock({ adfType: 'codeBlock', ...node.attrs });
-  }
+export default function convertCodeBlock(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   // Extract language if present
   const language = node.attrs && typeof node.attrs.language === 'string' ? node.attrs.language : '';
   // Extract code content
@@ -28,10 +22,5 @@ export default function convertCodeBlock(node: AdfNode, children: MarkdownBlock[
     code = '';
   }
   const markdown = `\n\`\`\`${language}\n${code}\n\`\`\``;
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown, adfInfo };
+  return { markdown };
 } 

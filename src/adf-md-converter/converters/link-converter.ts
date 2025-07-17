@@ -1,5 +1,5 @@
 /**
- * Converts a link ADF node to MarkdownBlock.
+ * Converts $1 to markdown.
  * Uses resolveLinkTextAndYaml for advanced link/text logic, including Confluence API lookup.
  * @param node The link ADF node
  * @param children The already converted children blocks
@@ -7,7 +7,7 @@
  * @param confluenceBaseUrl Base URL do Confluence para contexto
  * @returns Promise<MarkdownBlock>
  */
-import { AdfNode, MarkdownBlock } from '../types';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 import { resolveLinkTextAndYaml } from '../link-utils';
 
 export default async function convertLink(
@@ -15,7 +15,7 @@ export default async function convertLink(
   children: MarkdownBlock[],
   _level?: number,
   confluenceBaseUrl: string = ''
-): Promise<MarkdownBlock> {
+): Promise<ConverterResult> {
   const href = node.attrs && typeof node.attrs['href'] === 'string' ? node.attrs['href'] : '';
   const textFromChildren = children.map(child => child.markdown).join('');
   const { text, url, yaml } = await resolveLinkTextAndYaml({
@@ -25,13 +25,11 @@ export default async function convertLink(
     confluenceBaseUrl,
     originalType: 'link',
   });
+  
   // Se houver texto nos filhos, prioriza ele
   const linkText = textFromChildren.trim() ? textFromChildren : text;
-  const yamlBlock = yaml ? `<!--\n---\n${Object.entries(yaml).map(([k,v]) => `${k}: ${JSON.stringify(v)}`).join('\n')}\n...\n-->` : '';
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown: `[${linkText}](${url})`, adfInfo };
+  
+  // YAML generation handled by central logic based on CRITICAL_ATTRIBUTES
+  // link nodes don't need YAML for standard attributes (only href)
+  return { markdown: `[${linkText}](${url})` };
 } 

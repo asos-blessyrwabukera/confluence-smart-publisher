@@ -1,23 +1,26 @@
 /**
- * Converts an expand ADF node to MarkdownBlock.
+ * Converts expand to markdown.
  * The markdown is a blockquote with the title in bold and the children content below.
- * Always generates a yamlBlock with adfType and attrs.
+ * Always generates a yamlBlock with adfType and attrs for identification.
  * @param node The expand ADF node
  * @param children The already converted children blocks
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock } from '../types';
-import { generateYamlBlock } from '../utils';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 
-export default function convertExpand(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
+export default function convertExpand(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   const title = node.attrs && node.attrs['title'] ? String(node.attrs['title']) : '';
-  const yamlBlock = generateYamlBlock({ adfType: 'expand', ...node.attrs });
   const content = children.map(child => child.markdown).join('');
-  const markdown = `> **${title}**\n\n${content}`;
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown, adfInfo };
+  
+  // Split content into lines and prefix each with '>'
+  const contentLines = content.split('\n');
+  const prefixedContent = contentLines
+    .map(line => line.trim() ? `> ${line}` : '>')
+    .join('\n');
+  
+  const markdown = `> **${title}**\n${prefixedContent}`;
+  
+  // YAML generation handled by central logic based on CRITICAL_ATTRIBUTES
+  // expand nodes don't need YAML as title can be inferred from markdown structure
+  return { markdown };
 } 

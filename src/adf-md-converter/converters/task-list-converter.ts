@@ -1,20 +1,14 @@
 /**
- * Converts a taskList ADF node to MarkdownBlock.
- * Generates a Markdown task list, handling indentation for nesting.
- * If there are attributes, generates a yamlBlock with adfType and attrs.
+ * Converts a taskList ADF node to markdown.
+ * YAML generation is handled centrally by AdfToMarkdownConverter.
  * @param node The taskList ADF node
  * @param children The already converted children blocks (should be taskItems)
  * @param level The nesting level (default 0)
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock } from '../types';
-import { generateYamlBlock } from '../utils';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 
-export default function convertTaskList(node: AdfNode, children: MarkdownBlock[], level: number = 0): MarkdownBlock {
-  let yamlBlock = '';
-  if (node.attrs && Object.keys(node.attrs).length > 0) {
-    yamlBlock = generateYamlBlock({ adfType: 'taskList', ...node.attrs });
-  }
+export default function convertTaskList(node: AdfNode, children: MarkdownBlock[], level: number = 0): ConverterResult {
   // Cada child.markdown já deve ser '[ ] texto' ou '[x] texto', só aplicar indentação
   const markdown = children
     .map(child => child.markdown
@@ -23,10 +17,5 @@ export default function convertTaskList(node: AdfNode, children: MarkdownBlock[]
       .join('\n')
     )
     .join('\n');
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown, adfInfo };
+  return { markdown };
 } 

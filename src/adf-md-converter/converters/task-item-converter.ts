@@ -1,29 +1,18 @@
 /**
- * Converts a taskItem ADF node to MarkdownBlock.
- * The markdown is '[x] text' if state is 'DONE', or '[ ] text' otherwise.
- * If there are attributes, generates a yamlBlock with adfType and attrs.
+ * Converts a taskItem ADF node to markdown.
+ * YAML generation is handled centrally by AdfToMarkdownConverter.
  * @param node The taskItem ADF node
  * @param children The already converted children blocks
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock } from '../types';
-import { generateYamlBlock } from '../utils';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 
-export default function convertTaskItem(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
-  let yamlBlock = '';
-  if (node.attrs && Object.keys(node.attrs).length > 0) {
-    yamlBlock = generateYamlBlock({ adfType: 'taskItem', ...node.attrs });
-  }
+export default function convertTaskItem(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   const state = node.attrs && node.attrs['state'] === 'DONE' ? 'x' : ' ';
   let text = children.map(child => child.markdown).join('');
   if (!text && node.content && node.content[0] && node.content[0].text) {
     text = node.content[0].text;
   }
-  const markdown = `[${state}] ${text}`;
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown, adfInfo };
+  const markdown = `[${state}] ${text} \n `;
+  return { markdown };
 } 

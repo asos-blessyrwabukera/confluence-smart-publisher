@@ -1,15 +1,15 @@
 /**
- * Converts a math/mathBlock/easy-math-block ADF node to MarkdownBlock.
+ * Converts $1 to markdown.
  * The markdown is a KaTeX/LaTeX block ($$ ... $$).
  * Generates a yamlBlock if there are attributes.
  * @param node The math/mathBlock/easy-math-block ADF node
  * @param children The already converted children blocks
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock } from '../types';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 import { generateYamlBlock } from '../utils';
 
-export default function convertMathBlock(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
+export default function convertMathBlock(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   let latex = '';
   if (typeof node.text === 'string') {
     latex = node.text;
@@ -21,10 +21,5 @@ export default function convertMathBlock(node: AdfNode, children: MarkdownBlock[
     yamlBlock = generateYamlBlock({ adfType: node.type, ...node.attrs });
   }
   const markdown = `$$\n${latex}\n$$`;
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown, adfInfo };
+  return { markdown };
 } 

@@ -1,25 +1,14 @@
 /**
- * Converts a code ADF node to MarkdownBlock (inline code).
- * The markdown is the concatenation of the children's markdown, wrapped in backticks (`).
- * If there are attributes, generates a yamlBlock with adfType and attrs.
+ * Converts a code ADF node to markdown (inline code).
+ * YAML generation is handled centrally by AdfToMarkdownConverter.
  * @param node The code ADF node
  * @param children The already converted children blocks
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock } from '../types';
-import { generateYamlBlock } from '../utils';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 
-export default function convertCode(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
-  let yamlBlock = '';
-  if (node.attrs && Object.keys(node.attrs).length > 0) {
-    yamlBlock = generateYamlBlock({ adfType: 'code', ...node.attrs });
-  }
+export default function convertCode(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   const text = children.map(child => child.markdown).join('');
   const markdown = `\`${text}\``;
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown, adfInfo };
+  return { markdown };
 } 

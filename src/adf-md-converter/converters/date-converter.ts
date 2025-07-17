@@ -1,15 +1,15 @@
 /**
- * Converts a date ADF node to MarkdownBlock.
+ * Converts $1 to markdown.
  * The markdown is the date in YYYY-MM-DD format.
  * Generates a yamlBlock if there are attributes.
  * @param node The date ADF node
  * @param children The already converted children blocks (should be empty for date)
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock } from '../types';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 import { generateYamlBlock } from '../utils';
 
-export default function convertDate(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
+export default function convertDate(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   let text = node.text || '';
   if (!text && node.attrs && typeof node.attrs['timestamp'] === 'string') {
     const timestamp = Number(node.attrs['timestamp']);
@@ -22,10 +22,5 @@ export default function convertDate(node: AdfNode, children: MarkdownBlock[]): M
   if (node.attrs && Object.keys(node.attrs).length > 0) {
     yamlBlock = generateYamlBlock({ adfType: 'date', ...node.attrs });
   }
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown: text, adfInfo };
+  return { markdown: text };
 } 

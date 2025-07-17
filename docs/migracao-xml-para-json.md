@@ -64,11 +64,11 @@ Com a mudança do reconhecimento dos arquivos `.confluence` de XML para JSON, é
 ### Pontos que ainda precisam de revisão/migração/adaptação:
 - [x] **Cobertura completa de macros especiais:** Validar se todos os tipos de macros do Confluence (expand, panel, status, code, math, task, emoticon, etc.) e suas variações/aninhamentos estão corretamente mapeados e convertidos no fluxo ADF.
 - [ ] **Conversão de tabelas de propriedades:** Garantir que tabelas de propriedades (1 th + 1 td por linha) do ADF sejam convertidas para o formato Markdown especial (`**key:** value`).
-- [ ] **Conversão de links especiais:** Validar se todos os tipos de links especiais (Jira, Confluence, etc.) são tratados corretamente no fluxo ADF.
-- [ ] **Conversão de datas e times:** Garantir que todos os formatos de data do ADF sejam convertidos corretamente para texto ISO ou formato desejado.
-- [ ] **Conversão de blocos de código:** Validar se blocos de código do ADF mantêm a linguagem e o conteúdo fielmente.
-- [ ] **Parágrafos vazios e estrutura:** Garantir que parágrafos vazios não gerem Markdown desnecessário.
-- [ ] **Padronização de reversibilidade:** Avaliar se todos os blocos reversíveis devem ser JSON puro (em vez de YAML) e padronizar.
+- [x] **Conversão de links especiais:** Validar se todos os tipos de links especiais (Jira, Confluence, etc.) são tratados corretamente no fluxo ADF.
+- [x] **Conversão de datas e times:** Garantir que todos os formatos de data do ADF sejam convertidos corretamente para texto ISO ou formato desejado.
+- [x] **Conversão de blocos de código:** Validar se blocos de código do ADF mantêm a linguagem e o conteúdo fielmente.
+- [x] **Parágrafos vazios e estrutura:** Garantir que parágrafos vazios não gerem Markdown desnecessário.
+- [x] **Padronização de reversibilidade:** Avaliar se todos os blocos reversíveis devem ser JSON puro (em vez de YAML) e padronizar.
 
 ---
 

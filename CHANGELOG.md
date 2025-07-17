@@ -2,6 +2,35 @@
 
 All notable changes to the "confluence-smart-publisher" extension will be documented in this file.
 
+## [0.3.0] - 2025-06-30
+### Major Changes
+- **🚀 Complete Migration from Atlassian Storage Format to Atlas Document Format (ADF)**
+  - 📊 **New Standard Format**: All `.confluence` files now use Atlas Document Format (ADF) instead of Atlassian Storage Format as the default format
+  - 🔄 **CSP Metadata Migration**: Complete rewrite of CSP (Confluence Smart Publisher) parameter blocks
+    - Before: `<csp:parameters>` Atlassian Storage Format tags
+    - After: Clean Atlas Document Format (ADF) objects with `csp` property
+  - 🧹 **Dependency Cleanup**: Removed Atlassian Storage Format-related dependencies (`xml-escape`, `cheerio`, `fast-xml-parser`)
+  - ⚡ **Performance Improvements**: Faster parsing and validation with native Atlas Document Format (ADF) support
+  - 🔍 **Enhanced Validation**: Type-safe Atlas Document Format (ADF) schema validation instead of regex-based Atlassian Storage Format parsing
+  - 🎯 **Unified Data Extraction**: New generic `extractCSPValue()` function supports Atlas Document Format (ADF), YAML, and Atlassian Storage Format formats
+  - 💪 **Backwards Compatibility**: Seamless migration path with automatic format detection
+  - 🛠️ **Developer Experience**: Better IntelliSense and type safety with TypeScript interfaces
+
+### Enhanced
+- **Complete Table of Contents (TOC) Converter Rewrite**
+  - ✨ Full support for all Confluence TOC macro parameters based on [official documentation](https://confluence.atlassian.com/doc/table-of-contents-macro-182682099.html)
+  - 📋 **Output Types**: `list` (hierarchical) and `flat` (horizontal menu)
+  - 🎨 **List Styles**: Complete support for all bullet styles (default, none, disc, circle, square, decimal, alphabetical, roman numerals)
+  - 🔢 **Hierarchical Numbering**: Intelligent outline numbering (1.1, 1.2.1, etc.)
+  - 🎯 **Advanced Filtering**: Regex support for include/exclude heading patterns
+  - 🔗 **Flexible Separators**: Brackets, braces, parentheses, pipes, and custom separators for flat lists
+  - 📏 **Custom Indentation**: Pixel-based indentation control
+  - 🌐 **Absolute URLs**: Support for full URLs with base URL integration
+  - 🎨 **CSS Classes**: Custom styling support with div wrappers
+  - 🖨️ **Print Control**: Configurable printable/non-printable TOCs
+  - 🔄 **Smart Slug Generation**: Confluence-compatible anchor generation
+  - 📝 **Recursive Text Extraction**: Support for complex inline elements (strong, em, links)
+
 ## [0.2.0] - 2025-06-11
 - Added new command to convert Confluence Storage Format files to Markdown
   - Support for converting Confluence macros (info, tip, note, warning, error) to Markdown with emojis

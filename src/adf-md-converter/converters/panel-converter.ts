@@ -1,16 +1,14 @@
 /**
- * Converts a panel ADF node to MarkdownBlock.
+ * Converts $1 to markdown.
  * The markdown is a blockquote with an icon/text and the children content as paragraphs.
  * Always generates a yamlBlock with adfType and attrs.
  * @param node The panel ADF node
  * @param children The already converted children blocks
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock, iconMaps } from '../types';
-import { generateYamlBlock } from '../utils';
+import { AdfNode, MarkdownBlock, ConverterResult, iconMaps } from '../types';
 
-export default function convertPanel(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
-  const yamlBlock = generateYamlBlock({ adfType: 'panel', ...node.attrs });
+export default function convertPanel(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   const panelType = node.attrs && typeof node.attrs['panelType'] === 'string' ? node.attrs['panelType'] : '';
   const icon = iconMaps[panelType] || '';
   const iconText = node.attrs && node.attrs['panelIconText'] ? String(node.attrs['panelIconText']) : '';
@@ -36,10 +34,5 @@ export default function convertPanel(node: AdfNode, children: MarkdownBlock[]): 
   } else {
     md = '> ';
   }
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown: md, adfInfo };
+  return { markdown: md };
 } 

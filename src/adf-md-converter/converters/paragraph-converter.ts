@@ -1,22 +1,13 @@
 /**
- * Converts a paragraph ADF node to MarkdownBlock.
- * If there are extra attributes, generates a yamlBlock with adfType and attrs.
- * The markdown is the concatenation of the children's markdown.
+ * Converts a paragraph ADF node to markdown.
+ * YAML generation is handled centrally by AdfToMarkdownConverter.
  * @param node The paragraph ADF node
  * @param children The already converted children blocks
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock } from '../types';
-import { generateYamlBlock } from '../utils';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 
-export default function convertParagraph(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
-  let yamlBlock = '';
-  if (node.attrs && Object.keys(node.attrs).length > 0) {
-    yamlBlock = generateYamlBlock({ adfType: 'paragraph', ...node.attrs });
-  }
+export default function convertParagraph(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   const markdown = children.map(child => child.markdown).join('');
-  const adfInfo: any = { adfType: node.type };
-  if (typeof node.attrs?.localId === 'string') {adfInfo.localId = node.attrs.localId;}
-  if (typeof node.attrs?.id === 'string') {adfInfo.id = node.attrs.id;}
-  return { yamlBlock, markdown, adfInfo };
+  return { markdown };
 }

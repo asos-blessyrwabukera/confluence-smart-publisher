@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { publishConfluenceFile, ConfluenceClient, BodyFormat } from './confluenceClient';
-import path from 'path';
+import * as path from 'path';
 import { formatConfluenceDocument, decodeHtmlEntities } from './confluenceFormatter';
 import { getEmojiPickerHtml } from './webview';
 import { MarkdownConverter } from './markdownConverter';
 import { AdfToMarkdownConverter } from './adf-md-converter/adf-to-md-converter';
+import { createXMLCSPBlock, createYAMLCSPBlock } from './csp-utils';
 
 export function registerCommands(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
     // Command to publish .confluence file
@@ -145,7 +146,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 const modeloPath = await client.downloadConfluencePage(modeloId, BodyFormat.ATLAS_DOC_FORMAT, tempDir);
                 const fs = await import('fs');
                 let conteudo = fs.readFileSync(modeloPath, 'utf-8');
-                conteudo = conteudo.replace(/<csp:file_id>.*?<\/csp:file_id>\s*/s, '');
+                conteudo = conteudo.replace(/<csp:file_id>[\s\S]*?<\/csp:file_id>\s*/, '');
                 const novoArquivoPath = path.join(uri.fsPath, nomeArquivo.endsWith('.confluence') ? nomeArquivo : nomeArquivo + '.confluence');
                 fs.writeFileSync(novoArquivoPath, conteudo, { encoding: 'utf-8' });
                 outputChannel.appendLine(`[Create Page] File "${nomeArquivo}" created at "${novoArquivoPath}"`);
@@ -344,7 +345,6 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                                 }
                             });
                         } else {
-                            const { createXMLCSPBlock } = await import('./csp-utils.js');
                             const cspMetadata = {
                                 file_id: '',
                                 labels_list: '',
@@ -448,7 +448,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 outputChannel.appendLine(`[Convert] Starting conversion of file: "${uri.fsPath}"`);
                 const fs = await import('fs');
                 const path = await import('path');
-                const yaml = (await import('js-yaml')).default;
+                const yaml = await import('js-yaml');
                 const content = fs.readFileSync(uri.fsPath, 'utf-8');
                 outputChannel.appendLine(`[DEBUG] Conteúdo do arquivo: ${content.substring(0, 500)}`);
                 let adfJson;
@@ -463,18 +463,21 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 let yamlBlock = '';
                 if (adfJson.csp) {
                     try {
-                        const { createYAMLCSPBlock } = await import('./csp-utils.js');
                         yamlBlock = createYAMLCSPBlock(adfJson.csp);
                     } catch (e) {
                         outputChannel.appendLine(`[DEBUG] Erro ao converter csp para YAML: ${e}`);
                     }
                 }
 
+                // Obter confluenceBaseUrl da configuração para lookup de títulos
+                const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
+                const confluenceBaseUrl = (config.get('baseUrl') as string)?.replace(/\/$/, '') || '';
+
                 // Converter bloco content para markdown
                 let markdown = '';
                 if (adfJson.content) {
                     const converter = new AdfToMarkdownConverter();
-                    const markdownBlock = await converter.convertNode(adfJson.content, 0, '');
+                    const markdownBlock = await converter.convertNode(adfJson.content, 0, confluenceBaseUrl);
                     outputChannel.appendLine(`[DEBUG] markdownBlock: ${JSON.stringify(markdownBlock, null, 2)}`);
                     markdown = markdownBlock.markdown;
                 } else {

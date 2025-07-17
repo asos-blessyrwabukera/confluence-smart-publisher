@@ -1,25 +1,24 @@
 /**
- * Converts a table ADF node to MarkdownBlock.
- * Handles property tables and normal tables as in the legacy logic.
+ * Converts a table ADF node to markdown.
+ * YAML generation is handled centrally by AdfToMarkdownConverter.
  * @param node The table ADF node
  * @param children The already converted children blocks (should be rows)
- * @returns MarkdownBlock
+ * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock } from '../types';
-import { generateYamlBlock, isPropertyTable } from '../utils';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
+import { isPropertyTable } from '../utils';
 
-export default function convertTable(node: AdfNode, children: MarkdownBlock[]): MarkdownBlock {
-  let yamlBlock = '';
-  if (node.attrs && Object.keys(node.attrs).length > 0) {
-    yamlBlock = generateYamlBlock({ adfType: 'table', ...node.attrs });
-  }
+/**
+ * Removes extra formatting from property table keys
+ * @param text Text that may have extra ** formatting
+ * @returns Clean text for property tables
+ */
+function cleanPropertyKey(text: string): string {
+  // Remove extra ** formatting, but keep the content
+  return text.replace(/^\*\*|\*\*$/g, '').trim();
+}
 
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-
+export default function convertTable(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   // Property Table: all rows have 2 cells (1 header, 1 cell)
   if (isPropertyTable(node)) {
     let markdown = '\n';
@@ -27,10 +26,15 @@ export default function convertTable(node: AdfNode, children: MarkdownBlock[]): 
       // Espera-se que cada row.markdown seja '| key | value |'
       const cells = row.markdown.split('|').map(s => s.trim()).filter(Boolean);
       if (cells.length === 2) {
-        markdown += `**${cells[0]}:** ${cells[1]}\n\n`;
+        // Clean the key (remove extra ** formatting) and format properly
+        const cleanKey = cleanPropertyKey(cells[0]);
+        markdown += `**${cleanKey}:** ${cells[1]}\n\n`;
       }
     }
-    return { yamlBlock, markdown, adfInfo };
+    return { 
+      markdown,
+      context: { hasComplexContent: true }
+    };
   }
 
   // Normal Table: detect header in first row
@@ -51,7 +55,11 @@ export default function convertTable(node: AdfNode, children: MarkdownBlock[]): 
       markdown += children[i].markdown + '\n';
     }
   }
-  return { yamlBlock, markdown, adfInfo };
+  
+  return { 
+    markdown,
+    context: { hasComplexContent: children.length > 0 }
+  };
 }
 
 

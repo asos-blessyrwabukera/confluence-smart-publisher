@@ -1,5 +1,5 @@
 /**
- * Converts a blockCard ADF node to MarkdownBlock.
+ * Converts $1 to markdown.
  * Uses resolveLinkTextAndYaml for consistent link title and YAML logic.
  * @param node The blockCard ADF node
  * @param children The already converted children blocks (should be empty for blockCard)
@@ -7,7 +7,7 @@
  * @param confluenceBaseUrl Base URL for Confluence context
  * @returns Promise<MarkdownBlock>
  */
-import { AdfNode, MarkdownBlock } from '../types';
+import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
 import { resolveLinkTextAndYaml } from '../link-utils';
 
 export default async function convertBlockCard(
@@ -15,7 +15,7 @@ export default async function convertBlockCard(
   children: MarkdownBlock[],
   _level?: number,
   confluenceBaseUrl: string = ''
-): Promise<MarkdownBlock> {
+): Promise<ConverterResult> {
   // Extract url from node.attrs or node.attrs.data
   let url = '';
   if (node.attrs) {
@@ -37,11 +37,7 @@ export default async function convertBlockCard(
     originalType: 'blockCard',
   });
   const markdown = `[${text}](${resolvedUrl})`;
-  const yamlBlock = yaml ? `<!--\n---\n${Object.entries(yaml).map(([k,v]) => `${k}: ${JSON.stringify(v)}`).join('\n')}\n...\n-->` : '';
-  const adfInfo = {
-    adfType: node.type,
-    ...(typeof node.attrs?.localId === 'string' ? { localId: node.attrs.localId } : {}),
-    ...(typeof node.attrs?.id === 'string' ? { id: node.attrs.id } : {})
-  };
-  return { yamlBlock, markdown, adfInfo };
+  
+  // YAML generation handled by central logic based on CRITICAL_ATTRIBUTES
+  return { markdown };
 } 

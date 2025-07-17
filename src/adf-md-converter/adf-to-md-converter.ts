@@ -2,8 +2,8 @@
  * Main class responsible for converting ADF nodes to Markdown.
  * Traverses the ADF tree recursively and delegates conversion to specific converters.
  */
-import { AdfNode, MarkdownBlock } from './types';
-import { generateYamlBlock } from './utils';
+import { AdfNode, MarkdownBlock, ConverterResult, DocumentContext } from './types';
+import { generateYamlBlock, createSmartYamlBlock } from './utils';
 import convertDoc from './converters/doc-converter';
 import convertParagraph from './converters/paragraph-converter';
 import convertHeading from './converters/heading-converter';
@@ -37,22 +37,113 @@ import convertBodiedExtension from './converters/bodied-extension-converter';
 import convertMathBlock from './converters/math-block-converter';
 
 export class AdfToMarkdownConverter {
+  private rootDocument?: AdfNode;
+  private allNodes: AdfNode[] = [];
+
   /**
-   * Renderiza um bloco Markdown com comentários HTML e YAML, conforme a especificação.
+   * Converts a node using centralized YAML generation logic.
+   * This eliminates the need for each converter to handle YAML manually.
+   */
+  private convertWithCentralizedYaml(
+    node: AdfNode, 
+    converter: (node: AdfNode, children: MarkdownBlock[], level?: number, confluenceBaseUrl?: string, documentContext?: DocumentContext) => Promise<MarkdownBlock> | MarkdownBlock | ConverterResult | Promise<ConverterResult>,
+    children: MarkdownBlock[],
+    level?: number,
+    confluenceBaseUrl?: string
+  ): Promise<MarkdownBlock> | MarkdownBlock {
+    // Create document context for converters that need it (like TOC)
+    const documentContext: DocumentContext | undefined = 
+      this.rootDocument ? {
+        allNodes: this.allNodes,
+        rootDocument: this.rootDocument
+      } : undefined;
+
+    const result = converter(node, children, level, confluenceBaseUrl, documentContext);
+    
+    // Handle both async and sync converters
+    if (result instanceof Promise) {
+      return result.then(res => this.processConverterResult(node, res));
+    } else {
+      return this.processConverterResult(node, result);
+    }
+  }
+
+  /**
+   * Processes converter result and generates YAML centrally.
+   */
+  private processConverterResult(node: AdfNode, result: MarkdownBlock | ConverterResult): MarkdownBlock {
+    // If it's already a MarkdownBlock (legacy converter), return as-is
+    if ('yamlBlock' in result && 'adfInfo' in result) {
+      return result as MarkdownBlock;
+    }
+
+    // If it's a new ConverterResult, generate YAML centrally
+    const converterResult = result as ConverterResult;
+    const context = converterResult.context || {};
+    
+    // Force YAML generation if needsYaml is explicitly set, otherwise use smart logic
+    let yamlBlock: string;
+    if (context.needsYaml) {
+      // For complex table cells, include additional metadata for reversibility
+      if (node.type === 'tableCell' && context.hasComplexContent) {
+        yamlBlock = generateYamlBlock({ 
+          adfType: node.type, 
+          ...node.attrs,
+          hasComplexContent: true,
+          contentType: 'mixed' // Indicates mixed paragraph and list content
+        });
+      } else {
+        yamlBlock = generateYamlBlock({ adfType: node.type, ...node.attrs });
+      }
+    } else {
+      yamlBlock = createSmartYamlBlock(node, context);
+    }
+      
+    const adfInfo = {
+      adfType: node.type,
+      localId: (node.attrs?.localId as string) || (node.attrs?.id as string) || ''
+    };
+
+    return {
+      yamlBlock,
+      markdown: converterResult.markdown,
+      adfInfo
+    };
+  }
+
+  /**
+   * Renderiza um bloco Markdown com comentários HTML otimizados.
+   * Usa o novo formato que combina ADF-START com YAML em um único comentário.
    */
   private renderBlock(block: MarkdownBlock): string {
     const { yamlBlock, markdown, adfInfo } = block;
+    
+    // Se não há yamlBlock, retorna apenas o markdown (elemento simples)
+    if (!yamlBlock) {
+      return markdown;
+    }
+    
+    // Se há yamlBlock, ele já inclui ADF-START com YAML combinado
+    // Extrai localId do comentário ADF-START para garantir consistência
     const adfType = adfInfo?.adfType || 'unknown';
-    const localId = adfInfo?.localId ? ` localId=\"${adfInfo.localId}\"` : '';
-    const id = adfInfo?.id ? ` id=\"${adfInfo.id}\"` : '';
-    const startComment = `<!-- ADF-START adfType=\"${adfType}\"${localId}${id} -->`;
-    const endComment = `<!-- ADF-END adfType=\"${adfType}\"${localId}${id} -->`;
-    return [
-      startComment,
-      yamlBlock,
-      markdown,
-      endComment
-    ].filter(Boolean).join('\n');
+    
+    // Extract localId from yamlBlock ADF-START comment for consistency
+    const localIdMatch = yamlBlock.match(/localId="([^"]+)"/);
+    const localId = localIdMatch ? localIdMatch[1] : (adfInfo?.localId || '');
+    
+    const endComment = `<!-- ADF-END adfType="${adfType}" localId="${localId}" -->`;
+      
+    return [yamlBlock, markdown, endComment].filter(Boolean).join('\n');
+  }
+
+  /**
+   * Collects all nodes recursively for document context.
+   */
+  private collectAllNodes(node: AdfNode): void {
+    this.allNodes.push(node);
+    if (Array.isArray(node.content)) {
+      node.content.forEach(child => this.collectAllNodes(child));
+    }
   }
 
   /**
@@ -61,22 +152,32 @@ export class AdfToMarkdownConverter {
    * @param level The nesting level (for lists)
    */
   async convertNode(node: AdfNode, level: number = 0, confluenceBaseUrl: string = ''): Promise<MarkdownBlock> {
+    // If this is the root document, collect all nodes for context
+    if (node.type === 'doc' && !this.rootDocument) {
+      this.rootDocument = node;
+      this.allNodes = [];
+      this.collectAllNodes(node);
+    }
     const children = await this.convertChildren(node, level, confluenceBaseUrl);
     const converter = this.getConverter(node.type);
+    
     let block: MarkdownBlock;
+    
+    // Use centralized YAML generation for all converters
     if (node.type === 'bulletList' || node.type === 'orderedList' || node.type === 'taskList') {
-      block = await Promise.resolve((converter as any)(node, children, level, confluenceBaseUrl));
+      block = await Promise.resolve(this.convertWithCentralizedYaml(node, converter, children, level, confluenceBaseUrl));
     } else {
-      block = await Promise.resolve(converter(node, children, undefined, confluenceBaseUrl));
+      block = await Promise.resolve(this.convertWithCentralizedYaml(node, converter, children, undefined, confluenceBaseUrl));
     }
+    
     // Se for doc, não aplica renderBlock aqui (será feito na montagem final)
     if (node.type === 'doc') {
       // Para doc, renderiza todos os filhos já formatados
       const markdown = children.map(child => this.renderBlock(child)).join('\n\n');
       return { yamlBlock: '', markdown, adfInfo: { adfType: 'doc' } };
     }
-    // Para outros tipos, aplica renderBlock
-    return { ...block, markdown: this.renderBlock(block) };
+
+    return block;
   }
 
   /**
@@ -86,12 +187,17 @@ export class AdfToMarkdownConverter {
    */
   async convertChildren(node: AdfNode, level: number = 0, confluenceBaseUrl: string = ''): Promise<MarkdownBlock[]> {
     if (!Array.isArray(node.content)) {return [];} 
-    // Para listas aninhadas, incrementa o nível
-    return Promise.all(node.content.map(child =>
-      (child.type === 'bulletList' || child.type === 'orderedList' || child.type === 'taskList')
-        ? this.convertNode(child, level + 1, confluenceBaseUrl)
-        : this.convertNode(child, level, confluenceBaseUrl)
-    ));
+    
+    return Promise.all(node.content.map(child => {
+      if (child.type === 'bulletList' || child.type === 'orderedList' || child.type === 'taskList') {
+        // Increment level for nested lists inside listItems
+        const isParentListItem = node.type === 'listItem';
+        const childLevel = isParentListItem ? level + 1 : level;
+        return this.convertNode(child, childLevel, confluenceBaseUrl);
+      } else {
+        return this.convertNode(child, level, confluenceBaseUrl);
+      }
+    }));
   }
 
   /**
@@ -99,7 +205,7 @@ export class AdfToMarkdownConverter {
    * If not implemented, returns a function that puts the original node in the yamlBlock.
    * @param type Node type
    */
-  getConverter(type: string): (node: AdfNode, children: MarkdownBlock[], level?: number, confluenceBaseUrl?: string) => Promise<MarkdownBlock> | MarkdownBlock {
+  getConverter(type: string): (node: AdfNode, children: MarkdownBlock[], level?: number, confluenceBaseUrl?: string, documentContext?: DocumentContext) => Promise<MarkdownBlock> | MarkdownBlock | ConverterResult | Promise<ConverterResult> {
     if (type === 'doc') {return convertDoc;}
     if (type === 'paragraph') {return convertParagraph;}
     if (type === 'heading') {return convertHeading;}
