@@ -9,6 +9,7 @@
  * @returns ConverterResult
  */
 import { AdfNode, MarkdownBlock, ConverterResult, DocumentContext } from '../types';
+import { detectMermaidSyntax } from '../utils';
 import convertToc from './toc-converter';
 import convertMathBlock from './math-block-converter';
 
@@ -21,12 +22,6 @@ function generateExtensionFallback(node: AdfNode): string {
   const extensionKey = node.attrs?.extensionKey as string;
   const extensionType = node.attrs?.extensionType as string;
   const parameters = node.attrs?.parameters as any;
-  
-  // Mermaid Diagrams - Note: This fallback should not be reached as Mermaid extensions
-  // are handled by delegation in the main converter function
-  if (extensionKey?.includes('mermaid') || node.attrs?.text === 'Mermaid diagram') {
-    return `📊 **Mermaid Diagram**\n\n*(Diagram content preserved in metadata for re-conversion)*`;
-  }
   
   // Math/LaTeX - Note: This fallback should not be reached as math extensions
   // are handled by delegation to convertMathBlock in the main converter function
@@ -95,22 +90,48 @@ export default function convertExtension(
   
   // Handle Mermaid diagrams - extract content and create proper code block
   if (extensionKey?.includes('mermaid') || node.attrs?.text === 'Mermaid diagram') {
+    // Try multiple possible locations for Mermaid content
     const mermaidBody = parameters?.macroParams?.body?.value || 
                        parameters?.macroParams?.content?.value ||
                        parameters?.body?.value ||
-                       node.attrs?.text;
+                       parameters?.content?.value ||
+                       parameters?.text?.value ||
+                       parameters?.macroBody ||
+                       parameters?.diagram ||
+                       node.attrs?.text ||
+                       node.attrs?.body ||
+                       node.attrs?.content ||
+                       node.text;
     
-    if (mermaidBody && typeof mermaidBody === 'string') {
+    if (mermaidBody && typeof mermaidBody === 'string' && mermaidBody.trim() !== 'Mermaid diagram') {
       // Clean up the mermaid content - remove any extra whitespace
       const cleanMermaidContent = mermaidBody.trim();
       
-      // Create a proper Mermaid code block with language identifier
-      const markdown = `\`\`\`mermaid\n${cleanMermaidContent}\n\`\`\``;
-      
-      return { markdown };
+      // Validate that the content is not just a placeholder and is valid Mermaid syntax
+      if (cleanMermaidContent && 
+          cleanMermaidContent !== 'Mermaid diagram' && 
+          cleanMermaidContent.length > 5 &&
+          detectMermaidSyntax(cleanMermaidContent)) {
+        // Create a proper Mermaid code block with language identifier
+        const markdown = `\`\`\`mermaid\n${cleanMermaidContent}\n\`\`\``;
+        
+        return { markdown };
+      }
     }
     
-    // If no content found, fall back to readable format
+    // If we have children content, try to extract from there
+    if (children && children.length > 0) {
+      const childContent = children.map(child => child.markdown).join('\n').trim();
+      if (childContent && 
+          childContent !== 'Mermaid diagram' && 
+          childContent.length > 5 &&
+          detectMermaidSyntax(childContent)) {
+        const markdown = `\`\`\`mermaid\n${childContent}\n\`\`\``;
+        return { markdown };
+      }
+    }
+    
+    // If no valid content found, fall back to readable format
     return { markdown: `📊 **Mermaid Diagram**\n\n*(Diagram content preserved in metadata for re-conversion)*` };
   }
   

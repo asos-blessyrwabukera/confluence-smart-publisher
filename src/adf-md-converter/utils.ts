@@ -12,6 +12,108 @@ const ALWAYS_NEEDS_YAML = new Set([
 ]);
 
 /**
+ * Detects if the given code content appears to be a Mermaid diagram
+ * @param code The code content to analyze
+ * @returns true if the content appears to be Mermaid syntax
+ */
+export function detectMermaidSyntax(code: string): boolean {
+  if (!code || typeof code !== 'string') {
+    return false;
+  }
+
+  const trimmedCode = code.trim().toLowerCase();
+  
+  // Early exclusion for common programming languages
+  const programmingLanguagePatterns = [
+    /function\s+\w+\s*\(/i,                // JavaScript/TypeScript functions
+    /class\s+\w+\s*\{/,                    // Class definitions (but not Mermaid classDiagram)
+    /import\s+.*from/i,                    // Import statements
+    /export\s+(default\s+)?/i,             // Export statements
+    /const\s+\w+\s*=/i,                    // Const declarations
+    /let\s+\w+\s*=/i,                      // Let declarations
+    /var\s+\w+\s*=/i,                      // Var declarations
+    /console\.log/i,                       // Console.log statements
+    /document\./i,                         // DOM operations
+    /window\./i,                           // Window object
+    /<\w+[^>]*>/,                          // HTML tags
+    /\#include\s*</i,                      // C/C++ includes
+    /public\s+static\s+void\s+main/i,      // Java main method
+    /def\s+\w+\s*\(/i,                     // Python function definitions
+  ];
+
+  // If it looks like a programming language, it's probably not Mermaid
+  const looksLikeProgrammingLanguage = programmingLanguagePatterns.some(pattern => 
+    pattern.test(trimmedCode)
+  );
+  
+  if (looksLikeProgrammingLanguage) {
+    // Exception: if it also has strong Mermaid keywords, it might still be Mermaid
+    const strongMermaidKeywords = [
+      'graph ', 'graph\n', 'graph\t',
+      'flowchart ', 'flowchart\n', 'flowchart\t',
+      'sequencediagram',
+      'classDiagram',
+      'stateDiagram',
+      'erDiagram',
+      'gantt'
+    ];
+    
+    const hasStrongMermaidKeywords = strongMermaidKeywords.some(keyword => 
+      trimmedCode.startsWith(keyword) || trimmedCode.includes(keyword)
+    );
+    
+    if (!hasStrongMermaidKeywords) {
+      return false;
+    }
+  }
+  
+  // Common Mermaid diagram types and keywords
+  const mermaidKeywords = [
+    'graph ', 'graph\n', 'graph\t',
+    'flowchart ', 'flowchart\n', 'flowchart\t',
+    'sequencediagram', 'sequence diagram',
+    'classDiagram', 'class diagram',
+    'stateDiagram', 'state diagram',
+    'erDiagram', 'er diagram',
+    'journey', 'user journey',
+    'gantt',
+    'pie title',
+    'gitgraph',
+    'mindmap',
+    'timeline',
+    'quadrantChart',
+    'requirementDiagram',
+    'c4context',
+    'flowchart-v2'
+  ];
+
+  // Check for explicit Mermaid keywords
+  const hasKeywords = mermaidKeywords.some(keyword => 
+    trimmedCode.startsWith(keyword) || trimmedCode.includes(keyword)
+  );
+
+  // Check for common Mermaid syntax patterns (more specific now)
+  const mermaidPatterns = [
+    /^graph\s+(TD|TB|BT|RL|LR)/im,         // Graph direction at start
+    /^flowchart\s+(TD|TB|BT|RL|LR)/im,     // Flowchart direction at start
+    /\w+\s*-->\s*\w+/,                     // Arrow connections
+    /\w+\s*---\s*\w+/,                     // Line connections
+    /\w+\s*\[\s*[^[\]]+\s*\]/,             // Node with square brackets
+    /\w+\s*\{\s*[^{}]+\s*\}/,              // Node with curly braces (more specific)
+    /participant\s+\w+/i,                  // Sequence diagram participant
+    /note\s+(left|right|over)/i,           // Sequence diagram note
+    /state\s+\w+/i,                        // State diagram state
+    /\|\s*\w+\s*\|/,                       // ER diagram entity
+    /\w+\s*->>?\s*\w+/,                    // Sequence arrows
+    /\w+\s*\(\s*[^()]*\s*\)\s*-->/,        // Node with parentheses followed by arrow
+  ];
+
+  const hasPatterns = mermaidPatterns.some(pattern => pattern.test(trimmedCode));
+
+  return hasKeywords || hasPatterns;
+}
+
+/**
  * Critical attributes that are essential for reversibility by ADF node type
  */
 const CRITICAL_ATTRIBUTES: Record<string, string[]> = {

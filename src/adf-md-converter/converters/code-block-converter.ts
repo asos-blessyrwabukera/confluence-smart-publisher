@@ -6,10 +6,12 @@
  * @returns ConverterResult
  */
 import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
+import { detectMermaidSyntax } from '../utils';
 
 export default function convertCodeBlock(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   // Extract language if present
-  const language = node.attrs && typeof node.attrs.language === 'string' ? node.attrs.language : '';
+  let language = node.attrs && typeof node.attrs.language === 'string' ? node.attrs.language : '';
+  
   // Extract code content
   let code = '';
   if (Array.isArray(node.content)) {
@@ -17,10 +19,20 @@ export default function convertCodeBlock(node: AdfNode, children: MarkdownBlock[
   } else if (typeof node.text === 'string') {
     code = node.text;
   }
+  
   // Fallback if code is empty
   if (!code) {
     code = '';
   }
+
+  // Smart Mermaid detection
+  if (!language && detectMermaidSyntax(code)) {
+    language = 'mermaid';
+  } else if (language && language.toLowerCase().includes('mermaid')) {
+    // Normalize Mermaid language variants
+    language = 'mermaid';
+  }
+
   const markdown = `\n\`\`\`${language}\n${code}\n\`\`\``;
   return { markdown };
 } 
