@@ -139,6 +139,17 @@
           "type": "boolean",
           "default": false,
           "description": "Decode HTML entities when downloading Confluence files."
+        },
+        "confluenceSmartPublisher.mathRenderer": {
+          "type": "string",
+          "default": "katex",
+          "enum": ["katex", "mathjax", "latex"],
+          "enumDescriptions": [
+            "KaTeX - Rápido e leve. Usado em: VS Code, algumas extensões GitHub, sites com foco em performance. Aplica sanitização automática (ex: escapa underscores em \\text{}). Ideal para a maioria dos casos.",
+            "MathJax - Suporte LaTeX mais amplo. Usado em: GitHub nativo, Jupyter notebooks, sites acadêmicos. Sintaxe mais tolerante, mas renderização mais lenta. Escolha para fórmulas complexas.",
+            "LaTeX Puro - Sintaxe original sem modificações. Usado em: documentos científicos, quando você precisa da sintaxe exata do LaTeX. Pode não funcionar em todos os visualizadores web."
+          ],
+          "description": "Escolha o renderizador matemático para blocos de fórmulas baseado em onde o markdown será visualizado"
         }
       }
     },
