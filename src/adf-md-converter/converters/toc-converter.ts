@@ -10,6 +10,7 @@
  * @returns ConverterResult
  */
 import { AdfNode, MarkdownBlock, ConverterResult, DocumentContext, HeadingInfo } from '../types';
+import { generateSlug } from '../utils';
 
 /**
  * Interface for TOC parameters matching Confluence macro options
@@ -58,18 +59,7 @@ function extractHeadingText(headingNode: AdfNode): string {
     .trim();
 }
 
-/**
- * Generates a slug from heading text for internal links
- * Follows Confluence anchor generation rules
- */
-function generateSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single
-    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-}
+
 
 /**
  * Tests if heading text matches include/exclude regex patterns

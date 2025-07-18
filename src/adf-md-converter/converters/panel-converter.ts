@@ -6,11 +6,11 @@
  * @param children The already converted children blocks
  * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock, ConverterResult, iconMaps } from '../types';
+import { AdfNode, MarkdownBlock, ConverterResult, getEmojiByName } from '../types';
 
 export default function convertPanel(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   const panelType = node.attrs && typeof node.attrs['panelType'] === 'string' ? node.attrs['panelType'] : '';
-  const icon = iconMaps[panelType] || '';
+  const icon = getEmojiByName(panelType);
   const iconText = node.attrs && node.attrs['panelIconText'] ? String(node.attrs['panelIconText']) : '';
   const content = children.map(child => child.markdown).join('');
   // Split content into paragraphs

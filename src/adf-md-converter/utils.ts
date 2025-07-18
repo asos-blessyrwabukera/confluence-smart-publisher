@@ -360,20 +360,31 @@ export function createSmartYamlBlock(
   return generateYamlBlock({ adfType: node.type, ...node.attrs }, context);
 }
 
+import { emojiToText } from './types';
+
 /**
- * Generates a slug for a heading (GitHub style, in English).
+ * Generates a slug for a heading (maintains accents, converts common emojis to text).
  * @param text Heading text
  * @returns Slug string
  */
 export function generateSlug(text: string): string {
   return text
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics (compatible with ES5)
-    .replace(/[^a-z0-9\s-]/g, '')
+    // Convert common emojis to text equivalents
+    .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, (emoji) => {
+      return emojiToText[emoji] ? `-${emojiToText[emoji]}-` : '';
+    })
+    // Remove other special characters but keep accented letters
+    .replace(/[^\w\s\u00C0-\u017F-]/g, '')
+    // Replace multiple spaces/whitespace with single space
+    .replace(/\s+/g, ' ')
+    // Trim and replace spaces with hyphens
     .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
+    .replace(/\s/g, '-')
+    // Replace multiple hyphens with single hyphen
+    .replace(/-+/g, '-')
+    // Remove leading/trailing hyphens
+    .replace(/^-+|-+$/g, '');
 }
 
 /**

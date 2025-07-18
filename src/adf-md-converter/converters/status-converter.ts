@@ -5,13 +5,13 @@
  * @param children The already converted children blocks (should be empty for status)
  * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock, ConverterResult, iconMaps } from '../types';
+import { AdfNode, MarkdownBlock, ConverterResult, getEmojiByName } from '../types';
 
 export default function convertStatus(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   const textRaw = node.attrs && typeof node.attrs['text'] === 'string' ? node.attrs['text'] : (node.text || '');
   const text = textRaw.charAt(0).toUpperCase() + textRaw.slice(1);
   const color = node.attrs && typeof node.attrs['color'] === 'string' ? node.attrs['color'] : '';
-  const icon = iconMaps[color] || '';
+  const icon = getEmojiByName(color);
   const markdown = icon ? `${icon} ${text}` : text;
   
   return { markdown };

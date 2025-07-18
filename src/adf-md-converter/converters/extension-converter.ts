@@ -8,7 +8,7 @@
  * @param documentContext Document context for extensions that need it (like TOC)
  * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock, ConverterResult, DocumentContext } from '../types';
+import { AdfNode, MarkdownBlock, ConverterResult, DocumentContext, getEmojiByName } from '../types';
 import { detectMermaidSyntax } from '../utils';
 import convertToc from './toc-converter';
 import convertMathBlock from './math-block-converter';
@@ -50,7 +50,7 @@ function generateExtensionFallback(node: AdfNode): string {
   
   // Info/Note/Warning Panels (if somehow they come as extensions)
   if (extensionKey?.includes('info') || extensionKey?.includes('note')) {
-    return `💡 **Information Panel**\n\n*(Content preserved in metadata)*`;
+    return `${getEmojiByName('info')} **Information Panel**\n\n*(Content preserved in metadata)*`;
   }
   
   // Code/Syntax Highlighting

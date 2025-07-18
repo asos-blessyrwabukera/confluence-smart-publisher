@@ -5,7 +5,7 @@
  * @param children The already converted children blocks (should be empty)
  * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock, ConverterResult, iconMaps } from '../types';
+import { AdfNode, MarkdownBlock, ConverterResult, getEmojiByName } from '../types';
 
 export default function convertEmoji(node: AdfNode, children: MarkdownBlock[]): ConverterResult {
   let text = '';
@@ -16,7 +16,8 @@ export default function convertEmoji(node: AdfNode, children: MarkdownBlock[]): 
   }
   if (text.startsWith(':')) {
     const shortname = text.replace(/:/g, '');
-    text = iconMaps[shortname] || text;
+    const emoji = getEmojiByName(shortname);
+    text = emoji || text;
   }
   
   return { markdown: text };

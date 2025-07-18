@@ -5,7 +5,7 @@
  * @param children The already converted children blocks
  * @returns ConverterResult
  */
-import { AdfNode, MarkdownBlock, ConverterResult } from '../types';
+import { AdfNode, MarkdownBlock, ConverterResult, getEmojiByName } from '../types';
 
 /**
  * Generates a human-readable fallback for bodied extensions based on their type
@@ -44,8 +44,8 @@ function generateBodiedExtensionFallback(node: AdfNode, children: MarkdownBlock[
   
   // Note/Info panels with content
   if (extensionKey?.includes('info') || extensionKey?.includes('note')) {
-    const panelType = extensionKey.includes('warning') ? '⚠️' : 
-                     extensionKey.includes('error') ? '⛔' : '💡';
+    const panelType = extensionKey.includes('warning') ? getEmojiByName('warning') : 
+                     extensionKey.includes('error') ? getEmojiByName('block') : getEmojiByName('info');
     return `> ${panelType} **Note:**\n> \n> ${childContent.replace(/\n/g, '\n> ')}`;
   }
   

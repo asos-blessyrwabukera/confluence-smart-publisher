@@ -58,34 +58,77 @@ export interface HeadingInfo {
 }
 
 /**
- * Centralized icon/emoji map for panels, status, emoji shortnames, etc.
+ * Centralized icon/emoji mappings for consistent handling across converters
  */
-export const iconMaps: Record<string, string> = {
-  warning: '⚠️',
-  success: '✅',
-  error: '❌',
-  info: 'ℹ️',
-  note: '📝',
-  neutral: '⚪',
-  blue: '🔵',
-  green: '🟢',
-  yellow: '🟡',
-  red: '🔴',
-  purple: '🟣',
-  x: '❌',
-  check_mark: '✔️',
-  smile: '😃',
-  sad: '😢',
-  wink: '😉',
-  laugh: '😆',
-  angry: '😠',
-  thumbs_up: '👍',
-  thumbs_down: '👎',
-  blush: '😊',
-  surprised: '😮',
-  cry: '😭',
-  cool: '😎',
+
+
+
+/**
+ * Maps emoji symbols to text equivalents (for slug generation)
+ */
+export const emojiToText: Record<string, string> = {
+  '🚀': 'rocket',
+  '⚡': 'lightning', 
+  '🔥': 'fire',
+  '💡': 'idea',
+  '📝': 'note',
+  '📋': 'clipboard',
+  '🔧': 'tool',
+  '⚙️': 'settings',
+  '🎯': 'target',
+  '📊': 'chart',
+  '📈': 'graph',
+  '🔍': 'search',
+  '💻': 'computer',
+  '📱': 'mobile',
+  '🌐': 'web',
+  '🔒': 'lock',
+  '🔓': 'unlock',
+  '✅': 'check',
+  '❌': 'x',
+  '⚠️': 'warning',
+  '🚨': 'alert',
+  '📁': 'folder',
+  '📄': 'document',
+  '🔗': 'link',
+  // Include emojis for panels, status, and UI elements
+  'ℹ️': 'info',
+  '⚪': 'neutral',
+  '🔵': 'blue',
+  '🟢': 'green',
+  '🟡': 'yellow',
+  '🔴': 'red',
+  '🟣': 'purple',
+  '✔️': 'check-mark',
+  '😃': 'smile',
+  '😢': 'sad',
+  '😉': 'wink',
+  '😆': 'laugh',
+  '😠': 'angry',
+  '👍': 'thumbs-up',
+  '👎': 'thumbs-down',
+  '😊': 'blush',
+  '😮': 'surprised',
+  '😭': 'cry',
+  '😎': 'cool',
+  '🏁': 'checkered_flag',
+  '⛔': 'block'
 };
+
+/**
+ * Helper function to get emoji by name/color using emojiToText (inverse lookup)
+ * @param name The name/color to look up (e.g., 'warning', 'success', 'info')
+ * @returns The corresponding emoji or empty string if not found
+ */
+export function getEmojiByName(name: string): string {
+  // Find the emoji by doing reverse lookup in emojiToText
+  for (const [emoji, text] of Object.entries(emojiToText)) {
+    if (text === name) {
+      return emoji;
+    }
+  }
+  return '';
+}
 
 
 
