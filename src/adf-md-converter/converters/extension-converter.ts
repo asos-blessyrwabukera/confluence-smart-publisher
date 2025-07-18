@@ -10,6 +10,7 @@
  */
 import { AdfNode, MarkdownBlock, ConverterResult, DocumentContext } from '../types';
 import convertToc from './toc-converter';
+import convertMathBlock from './math-block-converter';
 
 /**
  * Generates a human-readable fallback for extensions based on their type
@@ -21,12 +22,14 @@ function generateExtensionFallback(node: AdfNode): string {
   const extensionType = node.attrs?.extensionType as string;
   const parameters = node.attrs?.parameters as any;
   
-  // Mermaid Diagrams
+  // Mermaid Diagrams - Note: This fallback should not be reached as Mermaid extensions
+  // are handled by delegation in the main converter function
   if (extensionKey?.includes('mermaid') || node.attrs?.text === 'Mermaid diagram') {
     return `📊 **Mermaid Diagram**\n\n*(Diagram content preserved in metadata for re-conversion)*`;
   }
   
-  // Math/LaTeX
+  // Math/LaTeX - Note: This fallback should not be reached as math extensions
+  // are handled by delegation to convertMathBlock in the main converter function
   if (extensionKey === 'easy-math-block' || extensionKey?.includes('math')) {
     const mathBody = parameters?.macroParams?.body?.value;
     if (mathBody) {
@@ -83,10 +86,49 @@ export default function convertExtension(
 ): ConverterResult {
   const extensionKey = node.attrs?.extensionKey as string;
   const extensionType = node.attrs?.extensionType as string;
+  const parameters = node.attrs?.parameters as any;
   
   // Use specific TOC converter when it's a TOC extension
   if (extensionKey === 'toc' || extensionType?.includes('toc')) {
     return convertToc(node, children, level, confluenceBaseUrl, documentContext);
+  }
+  
+  // Handle Mermaid diagrams - extract content and create proper code block
+  if (extensionKey?.includes('mermaid') || node.attrs?.text === 'Mermaid diagram') {
+    const mermaidBody = parameters?.macroParams?.body?.value || 
+                       parameters?.macroParams?.content?.value ||
+                       parameters?.body?.value ||
+                       node.attrs?.text;
+    
+    if (mermaidBody && typeof mermaidBody === 'string') {
+      // Clean up the mermaid content - remove any extra whitespace
+      const cleanMermaidContent = mermaidBody.trim();
+      
+      // Create a proper Mermaid code block with language identifier
+      const markdown = `\`\`\`mermaid\n${cleanMermaidContent}\n\`\`\``;
+      
+      return { markdown };
+    }
+    
+    // If no content found, fall back to readable format
+    return { markdown: `📊 **Mermaid Diagram**\n\n*(Diagram content preserved in metadata for re-conversion)*` };
+  }
+  
+  // Delegate math extensions to the math-block-converter
+  if (extensionKey === 'easy-math-block' || extensionKey?.includes('math')) {
+    const mathBody = parameters?.macroParams?.body?.value;
+    
+    if (mathBody) {
+      // Create a synthetic math node to pass to the math-block-converter
+      const mathNode: AdfNode = {
+        type: 'math',
+        text: mathBody,
+        attrs: node.attrs // Preserve original attributes for YAML generation
+      };
+      
+      // Delegate to the math-block-converter for proper processing
+      return convertMathBlock(mathNode, children);
+    }
   }
   
   // Generate human-readable fallback for other extensions
