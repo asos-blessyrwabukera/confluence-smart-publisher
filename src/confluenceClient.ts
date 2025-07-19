@@ -55,6 +55,68 @@ export class ConfluenceClient {
         return await resp.json() as any;
     }
 
+    async getAllPagesInSpace(spaceId: string): Promise<any[]> {
+        const { default: fetch } = await import('node-fetch');
+        const allPages: any[] = [];
+        let cursor: string | null = null;
+        const limit = 250; // Maximum allowed by API
+        
+        do {
+            let url = `${this.baseUrl}/api/v2/pages?space-id=${encodeURIComponent(spaceId)}&limit=${limit}&expand=body.${BodyFormat.STORAGE},version,space`;
+            if (cursor) {
+                url += `&cursor=${encodeURIComponent(cursor)}`;
+            }
+            
+            const resp = await fetch(url, { headers: { ...this.getAuthHeader(), 'Content-Type': 'application/json' } });
+            if (!resp.ok) {
+                throw new Error(`Failed to get pages from space ${spaceId}: ${await resp.text()}`);
+            }
+            
+            const data = await resp.json() as any;
+            if (data.results && Array.isArray(data.results)) {
+                allPages.push(...data.results);
+            }
+            
+            cursor = data._links?.next ? data._links.next.split('cursor=')[1]?.split('&')[0] : null;
+        } while (cursor);
+        
+        return allPages;
+    }
+
+    async downloadSpacePages(spaceId: string, outputDir: string = 'Downloaded', bodyFormat: BodyFormat = BodyFormat.STORAGE): Promise<string[]> {
+        const pages = await this.getAllPagesInSpace(spaceId);
+        const downloadedFiles: string[] = [];
+        
+        if (pages.length === 0) {
+            throw new Error(`No pages found in space with ID: ${spaceId}`);
+        }
+        
+        // Create space directory
+        let baseDir: string;
+        if (isAbsolute(outputDir)) {
+            baseDir = outputDir;
+        } else {
+            const workspaceFolders = workspace.workspaceFolders;
+            baseDir = workspaceFolders && workspaceFolders.length > 0 ? workspaceFolders[0].uri.fsPath : process.cwd();
+            baseDir = join(baseDir, outputDir);
+        }
+        
+        // Use the first page's space key for the directory name
+        const spaceKey = pages[0].spaceId || spaceId;
+        const spaceDir = join(baseDir, `space_${spaceKey}`);
+        
+        for (const page of pages) {
+            try {
+                const filePath = await this.downloadConfluencePage(page.id, bodyFormat, spaceDir);
+                downloadedFiles.push(filePath);
+            } catch (error: any) {
+                // Skip pages that fail to download and continue with others
+            }
+        }
+        
+        return downloadedFiles;
+    }
+
     async downloadConfluencePage(pageId: string, bodyFormat: BodyFormat = BodyFormat.STORAGE, outputDir: string = 'Downloaded'): Promise<string> {
         const { default: fetch } = await import('node-fetch');
         const page = await this.getPageById(pageId, bodyFormat);

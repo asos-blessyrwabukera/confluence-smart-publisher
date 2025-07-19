@@ -2,7 +2,7 @@
   "name": "confluence-smart-publisher",
   "displayName": "Confluence Smart Publisher",
   "description": "Publish and manage Confluence pages directly from VS Code",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "icon": "images/csp-icon.png",
   "engines": {
     "vscode": "^1.96.0"
@@ -25,6 +25,14 @@
       {
         "command": "confluence-smart-publisher.getPageById",
         "title": "Download Document by ID"
+      },
+      {
+        "command": "confluence-smart-publisher.downloadSpaceById", 
+        "title": "Download Entire Space by ID"
+      },
+      {
+        "command": "confluence-smart-publisher.syncSpace",
+        "title": "Sync Space Changes"
       },
       {
         "command": "confluence-smart-publisher.createPage",
@@ -76,6 +84,14 @@
         },
         {
           "command": "confluence-smart-publisher.getPageById",
+          "when": "explorerResourceIsFolder == true"
+        },
+        {
+          "command": "confluence-smart-publisher.downloadSpaceById",
+          "when": "explorerResourceIsFolder == true"
+        },
+        {
+          "command": "confluence-smart-publisher.syncSpace",
           "when": "explorerResourceIsFolder == true"
         },
         {

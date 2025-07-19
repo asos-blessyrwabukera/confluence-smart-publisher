@@ -6,6 +6,7 @@ import { getUnclosedOrUnopenedTagDiagnostics, getConfluenceDiagnostics } from '.
 import { allowedTags, allowedValues, allowedHierarchy } from './confluenceSchema';
 import { getEmojiPickerHtml } from './webview';
 import { MarkdownConverter } from './markdownConverter';
+import { SpaceSync, SyncStrategy } from './spaceSync';
 
 export function registerCommands(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
     // Command to publish .confluence file
@@ -107,6 +108,160 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
             outputChannel.appendLine(`[Download by ID] Error: ${e.message || e}`);
             outputChannel.show(true);
             vscode.window.showErrorMessage(`Error downloading page: ${e.message || e}`);
+        }
+    });
+
+    // Command to download entire space by ID
+    const downloadSpaceByIdCmd = vscode.commands.registerCommand('confluence-smart-publisher.downloadSpaceById', async (uri: vscode.Uri) => {
+        if (!uri || !uri.fsPath) {
+            vscode.window.showErrorMessage('Select a folder to save the space.');
+            return;
+        }
+        const stat = await vscode.workspace.fs.stat(uri);
+        if (stat.type !== vscode.FileType.Directory) {
+            vscode.window.showErrorMessage('Select a folder to save the space.');
+            return;
+        }
+        const spaceId = await vscode.window.showInputBox({ 
+            prompt: 'Enter the Confluence Space ID', 
+            ignoreFocusOut: true,
+            placeHolder: 'e.g., 12345678'
+        });
+        if (!spaceId) {
+            vscode.window.showWarningMessage('Space ID not provided.');
+            return;
+        }
+        try {
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Downloading entire space from Confluence...',
+                cancellable: false
+            }, async (progress) => {
+                outputChannel.appendLine(`[Download Space] Starting download of space: ID=${spaceId}`);
+                const client = new ConfluenceClient();
+                
+                progress.report({ message: 'Getting space pages...' });
+                const pages = await client.getAllPagesInSpace(spaceId);
+                outputChannel.appendLine(`[Download Space] Found ${pages.length} pages in space`);
+                
+                if (pages.length === 0) {
+                    vscode.window.showWarningMessage('No pages found in the specified space.');
+                    return;
+                }
+                
+                progress.report({ message: `Downloading ${pages.length} pages...` });
+                const downloadedFiles = await client.downloadSpacePages(spaceId, uri.fsPath, BodyFormat.STORAGE);
+                
+                const successCount = downloadedFiles.length;
+                const failedCount = pages.length - successCount;
+                
+                outputChannel.appendLine(`[Download Space] Download completed. ${successCount} pages downloaded successfully.`);
+                if (failedCount > 0) {
+                    outputChannel.appendLine(`[Download Space] ${failedCount} pages failed to download.`);
+                }
+                
+                const message = failedCount > 0 
+                    ? `Space download completed! ${successCount} pages downloaded, ${failedCount} failed.`
+                    : `Space download completed! ${successCount} pages downloaded successfully.`;
+                    
+                vscode.window.showInformationMessage(message);
+            });
+        } catch (e: any) {
+            outputChannel.appendLine(`[Download Space] Error: ${e.message || e}`);
+            outputChannel.show(true);
+            vscode.window.showErrorMessage(`Error downloading space: ${e.message || e}`);
+        }
+    });
+
+    // Command to sync space changes
+    const syncSpaceCmd = vscode.commands.registerCommand('confluence-smart-publisher.syncSpace', async (uri: vscode.Uri) => {
+        if (!uri || !uri.fsPath) {
+            vscode.window.showErrorMessage('Select a space folder to sync.');
+            return;
+        }
+        const stat = await vscode.workspace.fs.stat(uri);
+        if (stat.type !== vscode.FileType.Directory) {
+            vscode.window.showErrorMessage('Select a space folder to sync.');
+            return;
+        }
+        
+        // Check if this looks like a space folder
+        const folderName = path.basename(uri.fsPath);
+        if (!folderName.startsWith('space_')) {
+            const proceed = await vscode.window.showWarningMessage(
+                'This doesn\'t appear to be a space folder (should start with "space_"). Continue anyway?',
+                'Yes', 'No'
+            );
+            if (proceed !== 'Yes') {
+                return;
+            }
+        }
+        
+        const spaceId = await vscode.window.showInputBox({ 
+            prompt: 'Enter the Confluence Space ID to sync with', 
+            ignoreFocusOut: true,
+            placeHolder: 'e.g., 12345678'
+        });
+        if (!spaceId) {
+            vscode.window.showWarningMessage('Space ID not provided.');
+            return;
+        }
+        
+        // Ask for sync strategy
+        const strategyChoice = await vscode.window.showQuickPick([
+            {
+                label: 'Interactive (Recommended)',
+                detail: 'Ask me what to do for each conflict',
+                value: SyncStrategy.ASK_USER
+            },
+            {
+                label: 'Download All Changes',
+                detail: 'Download all changes from Confluence (may overwrite local edits)',
+                value: SyncStrategy.REMOTE_WINS
+            },
+            {
+                label: 'Backup and Download',
+                detail: 'Create backup of local files, then download all changes',
+                value: SyncStrategy.BACKUP_AND_DOWNLOAD
+            },
+            {
+                label: 'Keep Local Files',
+                detail: 'Only download new pages, keep existing files unchanged',
+                value: SyncStrategy.LOCAL_WINS
+            }
+        ], {
+            placeHolder: 'Choose how to handle conflicts',
+            ignoreFocusOut: true
+        });
+        
+        if (!strategyChoice) {
+            return;
+        }
+        
+        try {
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Analyzing space changes...',
+                cancellable: false
+            }, async (progress) => {
+                outputChannel.appendLine(`[Space Sync] Starting sync of space ${spaceId} with strategy: ${strategyChoice.label}`);
+                
+                const spaceSync = new SpaceSync(outputChannel);
+                
+                progress.report({ message: 'Analyzing differences...' });
+                const result = await spaceSync.syncSpace(spaceId, uri.fsPath, strategyChoice.value);
+                
+                outputChannel.appendLine(`[Space Sync] Sync completed with status: ${result.status}`);
+                outputChannel.appendLine(`[Space Sync] Summary: ${JSON.stringify(result.summary, null, 2)}`);
+                
+                if (result.backupPath) {
+                    outputChannel.appendLine(`[Space Sync] Backup created at: ${result.backupPath}`);
+                }
+            });
+        } catch (e: any) {
+            outputChannel.appendLine(`[Space Sync] Error: ${e.message || e}`);
+            outputChannel.show(true);
+            vscode.window.showErrorMessage(`Error syncing space: ${e.message || e}`);
         }
     });
 
@@ -429,6 +584,8 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
         publishCmd,
         getPageByTitleCmd,
         getPageByIdCmd,
+        downloadSpaceByIdCmd,
+        syncSpaceCmd,
         createPageCmd,
         formatConfluenceCmd,
         syncWithPublishedCmd,
