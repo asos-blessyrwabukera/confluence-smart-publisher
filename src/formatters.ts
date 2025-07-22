@@ -10,7 +10,7 @@ export function registerFormatters(context: vscode.ExtensionContext, outputChann
             try {
                 const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
                 const numberChapters = config.get('format.numberChapters', false);
-                formatted = formatConfluenceDocument(text, numberChapters, outputChannel);
+                formatted = formatConfluenceDocument(text);
             } catch (e) {
                 // If error occurs, return original text
                 outputChannel.appendLine(`Error formatting file: ${e instanceof Error ? e.message : String(e)}`);

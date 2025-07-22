@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { publishConfluenceFile, ConfluenceClient, BodyFormat } from './confluenceClient';
-import path from 'path';
+import * as path from 'path';
 import { formatConfluenceDocument, decodeHtmlEntities } from './confluenceFormatter';
 import { getEmojiPickerHtml } from './webview';
 import { MarkdownConverter } from './markdownConverter';
-import { ConfluenceToMarkdownConverter } from './confluenceToMarkdownConverter';
+import { AdfToMarkdownConverter } from './adf-md-converter/adf-to-md-converter';
+import { createXMLCSPBlock, createYAMLCSPBlock } from './csp-utils';
 
 export function registerCommands(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
     // Command to publish .confluence file
@@ -63,7 +64,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 const page = await client.getPageByTitle(spaceKey, title);
                 if (!page) {throw new Error('Page not found.');}
                 const pageId = page.id;
-                const filePath = await client.downloadConfluencePage(pageId, BodyFormat.STORAGE, uri.fsPath);
+                const filePath = await client.downloadConfluencePage(pageId, BodyFormat.ATLAS_DOC_FORMAT, uri.fsPath);
                 outputChannel.appendLine(`[Download by Title] Page downloaded to: "${filePath}"`);
                 vscode.window.showInformationMessage(`Page downloaded to: "${filePath}"`);
             });
@@ -98,7 +99,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
             }, async () => {
                 outputChannel.appendLine(`[Download by ID] Searching page: ID=${pageId}`);
                 const client = new ConfluenceClient();
-                const filePath = await client.downloadConfluencePage(pageId, BodyFormat.STORAGE, uri.fsPath);
+                const filePath = await client.downloadConfluencePage(pageId, BodyFormat.ATLAS_DOC_FORMAT , uri.fsPath);
                 outputChannel.appendLine(`[Download by ID] Page downloaded to: "${filePath}"`);
                 vscode.window.showInformationMessage(`Page downloaded to: "${filePath}"`);
             });
@@ -142,10 +143,10 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 outputChannel.appendLine(`[Create Page] Downloading template: ID=${modeloId}`);
                 const client = new ConfluenceClient();
                 const tempDir = uri.fsPath;
-                const modeloPath = await client.downloadConfluencePage(modeloId, BodyFormat.STORAGE, tempDir);
+                const modeloPath = await client.downloadConfluencePage(modeloId, BodyFormat.ATLAS_DOC_FORMAT, tempDir);
                 const fs = await import('fs');
                 let conteudo = fs.readFileSync(modeloPath, 'utf-8');
-                conteudo = conteudo.replace(/<csp:file_id>.*?<\/csp:file_id>\s*/s, '');
+                conteudo = conteudo.replace(/<csp:file_id>[\s\S]*?<\/csp:file_id>\s*/, '');
                 const novoArquivoPath = path.join(uri.fsPath, nomeArquivo.endsWith('.confluence') ? nomeArquivo : nomeArquivo + '.confluence');
                 fs.writeFileSync(novoArquivoPath, conteudo, { encoding: 'utf-8' });
                 outputChannel.appendLine(`[Create Page] File "${nomeArquivo}" created at "${novoArquivoPath}"`);
@@ -171,7 +172,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
             const editor = await vscode.window.showTextDocument(document, { preview: false });
             const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
             const numberChapters = config.get('format.numberChapters', false);
-            const formatted = formatConfluenceDocument(document.getText(), numberChapters);
+            const formatted = formatConfluenceDocument(document.getText());
             await editor.edit(editBuilder => {
                 const start = new vscode.Position(0, 0);
                 const end = new vscode.Position(document.lineCount, 0);
@@ -225,17 +226,17 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
                 const numberChapters = config.get('format.numberChapters', false);
                 // Baixa o arquivo publicado
-                const publishedPath = await client.downloadConfluencePage(fileId, BodyFormat.STORAGE, temp);
+                const publishedPath = await client.downloadConfluencePage(fileId, BodyFormat.ATLAS_DOC_FORMAT, temp);
 
                 // Lê e formata o conteúdo local
                 const localContent = fs.readFileSync(uri.fsPath, 'utf-8');
-                const formattedLocal = formatConfluenceDocument(localContent, numberChapters);
+                const formattedLocal = formatConfluenceDocument(localContent);
                 const formattedLocalPath = path.join(temp, 'local_formatted_' + path.basename(uri.fsPath));
                 fs.writeFileSync(formattedLocalPath, formattedLocal, { encoding: 'utf-8' });
 
                 // Lê e formata o conteúdo publicado
                 const publishedContent = fs.readFileSync(publishedPath, 'utf-8');
-                const formattedPublished = formatConfluenceDocument(publishedContent, numberChapters);
+                const formattedPublished = formatConfluenceDocument(publishedContent);
                 const formattedPublishedPath = path.join(temp, 'published_formatted_' + path.basename(publishedPath));
                 fs.writeFileSync(formattedPublishedPath, formattedPublished, { encoding: 'utf-8' });
 
@@ -344,7 +345,16 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                                 }
                             });
                         } else {
-                            novoContent = `<csp:parameters xmlns:csp=\"https://confluence.smart.publisher/csp\">\n  <csp:properties>\n  ${emojiProps}\n  </csp:properties>\n</csp:parameters>\n` + content;
+                            const cspMetadata = {
+                                file_id: '',
+                                labels_list: '',
+                                parent_id: '',
+                                properties: [
+                                    { key: 'emoji-title-draft', value: codePoint },
+                                    { key: 'emoji-title-published', value: codePoint }
+                                ]
+                            };
+                            novoContent = createXMLCSPBlock(cspMetadata) + '\n' + content;
                         }
 
                         fs.writeFileSync(uri.fsPath, novoContent, { encoding: 'utf-8' });
@@ -429,7 +439,6 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
             vscode.window.showErrorMessage('Select a .confluence file to convert.');
             return;
         }
-
         try {
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
@@ -437,13 +446,55 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 cancellable: false
             }, async () => {
                 outputChannel.appendLine(`[Convert] Starting conversion of file: "${uri.fsPath}"`);
-                const converter = new ConfluenceToMarkdownConverter(outputChannel);
-                const markdownFilePath = await converter.convertFile(uri.fsPath);
-                outputChannel.appendLine(`[Convert] File successfully converted: "${path.basename(markdownFilePath)}"`);
-                vscode.window.showInformationMessage(`File successfully converted: "${path.basename(markdownFilePath)}"`);
-                
+                const fs = await import('fs');
+                const path = await import('path');
+                const yaml = await import('js-yaml');
+                const content = fs.readFileSync(uri.fsPath, 'utf-8');
+                outputChannel.appendLine(`[DEBUG] Conteúdo do arquivo: ${content.substring(0, 500)}`);
+                let adfJson;
+                try {
+                    adfJson = JSON.parse(content);
+                } catch (e) {
+                    throw new Error('O arquivo .confluence não está em formato JSON ADF válido.');
+                }
+                outputChannel.appendLine(`[DEBUG] adfJson: ${JSON.stringify(adfJson, null, 2).substring(0, 500)}`);
+
+                // Converter bloco csp para YAML puro usando a função utilitária
+                let yamlBlock = '';
+                if (adfJson.csp) {
+                    try {
+                        yamlBlock = createYAMLCSPBlock(adfJson.csp);
+                    } catch (e) {
+                        outputChannel.appendLine(`[DEBUG] Erro ao converter csp para YAML: ${e}`);
+                    }
+                }
+
+                // Obter confluenceBaseUrl da configuração para lookup de títulos
+                const config = vscode.workspace.getConfiguration('confluenceSmartPublisher');
+                const confluenceBaseUrl = (config.get('baseUrl') as string)?.replace(/\/$/, '') || '';
+
+                // Converter bloco content para markdown
+                let markdown = '';
+                if (adfJson.content) {
+                    const converter = new AdfToMarkdownConverter();
+                    const markdownBlock = await converter.convertNode(adfJson.content, 0, confluenceBaseUrl);
+                    outputChannel.appendLine(`[DEBUG] markdownBlock: ${JSON.stringify(markdownBlock, null, 2)}`);
+                    markdown = markdownBlock.markdown;
+                } else {
+                    outputChannel.appendLine('[DEBUG] Bloco content não encontrado no JSON.');
+                }
+
+                const outputPath = uri.fsPath.replace(/\.confluence$/, '.md');
+                const finalContent = `${yamlBlock.trim()}
+
+${markdown.trim()}
+`;
+                fs.writeFileSync(outputPath, finalContent, 'utf-8');
+
+                outputChannel.appendLine(`[Convert] File successfully converted: "${path.basename(outputPath)}"`);
+                vscode.window.showInformationMessage(`File successfully converted: "${path.basename(outputPath)}"`);
                 // Opens the converted file
-                const doc = await vscode.workspace.openTextDocument(markdownFilePath);
+                const doc = await vscode.workspace.openTextDocument(outputPath);
                 await vscode.window.showTextDocument(doc);
             });
         } catch (e: any) {
