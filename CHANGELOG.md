@@ -2,6 +2,14 @@
 
 All notable changes to the "confluence-smart-publisher" extension will be documented in this file.
 
+
+
+## [0.3.2] - 2025-07-22
+### Enhanced
+- **📦 Multi-Platform Distribution**
+  - 🌐 **Open VSX Registry**: Extension now available on Open VSX Registry for broader VSCode ecosystem compatibility
+  - 🔄 **Expanded Accessibility**: Support for VSCode-compatible editors beyond the official marketplace
+
 ## [0.3.1] - 2025-06-30
 ### Major Changes
 - **🚀 Complete Migration from Atlassian Storage Format to Atlas Document Format (ADF)**
