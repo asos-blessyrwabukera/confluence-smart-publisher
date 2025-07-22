@@ -2,7 +2,7 @@
 
 All notable changes to the "confluence-smart-publisher" extension will be documented in this file.
 
-## [0.3.0] - 2025-06-30
+## [0.3.1] - 2025-06-30
 ### Major Changes
 - **🚀 Complete Migration from Atlassian Storage Format to Atlas Document Format (ADF)**
   - 📊 **New Standard Format**: All `.confluence` files now use Atlas Document Format (ADF) instead of Atlassian Storage Format as the default format
