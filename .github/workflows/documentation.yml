@@ -49,21 +49,10 @@ jobs:
           # Procura todos os ficheiros .html e substitui as referências a ".md" por ".html"
           find build -type f -name "*.html" -exec sed -i 's/\.md/\.html/g' {} +
 
-      # 4. Implementa para PRODUÇÃO (raiz) se o ramo for 'main'
-      - name: Deploy to Production
+      # 4. Publica as páginas
+      - name: Deploy
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build
-          clean_exclude: |
-            preview
-
-      # 5. Implementa para PRÉ-VISUALIZAÇÃO (subpasta /preview) se o ramo for 'preview'
-      - name: Deploy to Preview
-        if: github.ref == 'refs/heads/preview'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
-          destination_dir: preview
