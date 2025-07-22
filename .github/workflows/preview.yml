@@ -31,6 +31,7 @@ jobs:
         
       - name: Publish to VS Code Marketplace
         run: npx @vscode/vsce publish --pre-release
+        continue-on-error: true
         env:
           VSCE_PAT: ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}
           
