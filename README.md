@@ -23,30 +23,41 @@ Enjoying the Confluence Smart Publisher extension?
 
 ## 📋 Table of Contents
 
-- [Extension in Action](#-extension-in-action)
-  - [Real-time Diagnostics](#-real-time-diagnostics)
-  - [Smart Formatter](#-smart-formatter)
-- [Features](#-features)
-  - [Commands](#-commands)
-  - [Unique Feature](#-unique-feature)
-  - [Validations and Diagnostics](#-validations-and-diagnostics)
-    - [Structure Validation](#-structure-validation)
-    - [Visual Diagnostics](#-visual-diagnostics)
-    - [Specific Validations](#-specific-validations)
-    - [Auto-correction](#-auto-correction)
-    - [Logs and Diagnostics](#-logs-and-diagnostics)
-- [Requirements](#️-requirements)
-- [Installation](#-installation)
-- [Extension Settings](#️-extension-settings)
-- [File Structure](#-confluence-file-structure)
-- [Dependencies](#-dependencies)
-- [Known Issues](#-known-issues)
-- [Contributing](#-contributing)
-- [More Information](#ℹ️-more-information)
-- [License](#-license)
-- [Current Version](#-current-version)
+- [🚀 Confluence Smart Publisher](#-confluence-smart-publisher)
+  - [🎬 Extension in Action](#-extension-in-action)
+    - [🩺 Real-time Diagnostics](#-real-time-diagnostics)
+    - [🛠️ Smart Formatter](#️-smart-formatter)
+  - [☕️ Buy me a coffe](#️-buy-me-a-coffe)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [✨ Features](#-features)
+    - [🎨 Material for MkDocs Support](#-material-for-mkdocs-support)
+    - [🎮 Commands](#-commands)
+    - [🔄 UNIQUE FEATURE: Metadata synchronization!](#-unique-feature-metadata-synchronization)
+    - [🔍 Validations and Diagnostics](#-validations-and-diagnostics)
+      - [📝 Structure Validation](#-structure-validation)
+      - [👁️ Visual Diagnostics](#️-visual-diagnostics)
+      - [✅ Specific Validations](#-specific-validations)
+      - [🔧 Auto-correction](#-auto-correction)
+      - [📊 Logs and Diagnostics](#-logs-and-diagnostics)
+  - [⚙️ Requirements](#️-requirements)
+  - [📥 Installation](#-installation)
+  - [🔧 Extension Settings](#-extension-settings)
+  - [📄 .confluence File Structure](#-confluence-file-structure)
+  - [🧩 Dependencies](#-dependencies)
+  - [🚧 Known Issues](#-known-issues)
+  - [🧑‍💻 Contributing](#-contributing)
+  - [ℹ️ More Information](#ℹ️-more-information)
+  - [📄 License](#-license)
 
 ## ✨ Features
+
+### 🎨 Material for MkDocs Support
+
+The extension now includes enhanced support for **Material for MkDocs** format:
+- **Admonition Conversion**: Confluence panels are automatically converted to Material for MkDocs admonition syntax (`!!! type "title"`)
+- **Complete Type Mapping**: Support for all Confluence panel types including `info`, `warning`, `success`, `error`, `tip`, `note`, `example`, `quote`, `abstract`, `failure`, `bug`, `question`, and `custom`
+- **Smart Formatting**: First paragraph becomes the admonition title, remaining content is properly indented
+- **Fallback Support**: Unknown panel types gracefully fallback to `note` admonition type
 
 ### 🎮 Commands
 - **Direct publishing**: Publish `.confluence` files as pages on Confluence with a single click. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/publish-document)
@@ -54,7 +65,7 @@ Enjoying the Confluence Smart Publisher extension?
 - **Synchronization**: Compare and synchronize local content with what's published on Confluence, choosing which version to keep. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/sync-with-published)
 - **Template-based creation**: Create new files based on Confluence template pages. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/create-document)
 - **Markdown to Confluence**: Convert Markdown files to Confluence Storage Format, supporting common syntax like headers, lists, code blocks, and tables. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/convert-markdown)
-- **Confluence to Markdown**: Convert Confluence Storage Format files to Markdown, preserving metadata, macros, and formatting. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/convert-confluence-markdown)
+- **Confluence to Markdown**: Convert Confluence Storage Format files to Markdown with enhanced support for Material for MkDocs Admonitions, preserving metadata, macros, and formatting. Panel elements are automatically converted to proper admonition syntax with comprehensive type mapping. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/convert-confluence-markdown)
 - **Automatic formatting**: Format `.confluence` files with specific rules, including automatic chapter numbering. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/format-document)
 - **Structure validation**: Real-time diagnostics of required tags, structure, and attributes, displaying issues in VSCode. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/structure-validation)
 - **Tag auto-completion**: Smart suggestions for Confluence custom tags and attributes. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/tag-auto-completion)

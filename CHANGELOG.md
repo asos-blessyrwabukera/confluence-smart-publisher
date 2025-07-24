@@ -4,6 +4,15 @@ All notable changes to the "confluence-smart-publisher" extension will be docume
 
 
 
+## [0.3.3] - 2025-01-23
+### Enhanced
+- **🎨 Panel Converter Enhancement**
+  - ✅ **Material for MkDocs Admonition Support**: Panel converter now uses Material for MkDocs Admonition format instead of blockquotes
+  - 🔄 **Comprehensive Panel Type Mapping**: Complete mapping of all Confluence panel types (`info`, `note`, `warning`, `success`, `error`, `tip`, `example`, `quote`, `abstract`, `failure`, `bug`, `question`, `custom`)
+  - 🎯 **Smart Title Extraction**: First paragraph content automatically used as admonition title, remaining content properly indented
+  - 📝 **Improved Formatting**: Clean syntax without unnecessary quotes in titles
+  - 🛡️ **Fallback Support**: Intelligent fallback for unknown panel types to `note` admonition
+
 ## [0.3.2] - 2025-07-22
 ### Enhanced
 - **📦 Multi-Platform Distribution**
