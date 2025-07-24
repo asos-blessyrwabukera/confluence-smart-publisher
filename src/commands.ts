@@ -6,6 +6,7 @@ import { getEmojiPickerHtml } from './webview';
 import { MarkdownConverter } from './markdownConverter';
 import { AdfToMarkdownConverter } from './adf-md-converter/adf-to-md-converter';
 import { createXMLCSPBlock, createYAMLCSPBlock } from './csp-utils';
+import { PreviewPanel } from './preview/PreviewPanel';
 
 export function registerCommands(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
     // Command to publish .confluence file
@@ -504,6 +505,19 @@ ${markdown.trim()}
         }
     });
 
+    // Command to open markdown preview
+    const previewCmd = vscode.commands.registerCommand('confluence-smart-publisher.preview', () => {
+        try {
+            outputChannel.appendLine('[Preview] Opening Markdown preview...');
+            PreviewPanel.createOrShow(context.extensionUri, outputChannel);
+            outputChannel.appendLine('[Preview] Markdown preview opened successfully');
+        } catch (e: any) {
+            outputChannel.appendLine(`[Preview] Error: ${e.message || e}`);
+            outputChannel.show(true);
+            vscode.window.showErrorMessage(`Error opening preview: ${e.message || e}`);
+        }
+    });
+
     // Register all commands
     context.subscriptions.push(
         publishCmd,
@@ -515,6 +529,7 @@ ${markdown.trim()}
         setEmojiTitleCmd,
         decodeHtmlCmd,
         convertMarkdownCmd,
-        convertConfluenceToMarkdownCmd
+        convertConfluenceToMarkdownCmd,
+        previewCmd
     );
 } 
