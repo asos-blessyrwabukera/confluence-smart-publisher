@@ -13,16 +13,21 @@ export class PreviewPanel {
     private readonly _renderer: MarkdownRenderer;
     private _disposables: vscode.Disposable[] = [];
     private _currentDocument: vscode.TextDocument | undefined;
+    private _initialDocument: vscode.TextDocument | undefined;
     private _updateTimeout: NodeJS.Timeout | undefined;
 
     public static createOrShow(extensionUri: vscode.Uri, outputChannel: vscode.OutputChannel) {
-        const column = vscode.window.activeTextEditor
-            ? vscode.ViewColumn.Beside
-            : undefined;
+        const activeEditor = vscode.window.activeTextEditor;
+        const column = activeEditor ? vscode.ViewColumn.Beside : undefined;
 
-        // If we already have a panel, show it
+        // If we already have a panel, show it and update with current document
         if (PreviewPanel.currentPanel) {
             PreviewPanel.currentPanel._panel.reveal(column);
+            // Update with current active document if it's a markdown file
+            if (activeEditor && PreviewPanel.currentPanel._isMarkdownDocument(activeEditor.document)) {
+                PreviewPanel.currentPanel._initialDocument = activeEditor.document;
+                PreviewPanel.currentPanel._update();
+            }
             return;
         }
 
@@ -41,7 +46,7 @@ export class PreviewPanel {
             }
         );
 
-        PreviewPanel.currentPanel = new PreviewPanel(panel, extensionUri, outputChannel);
+        PreviewPanel.currentPanel = new PreviewPanel(panel, extensionUri, outputChannel, activeEditor?.document);
     }
 
     public static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, outputChannel: vscode.OutputChannel) {
@@ -51,11 +56,13 @@ export class PreviewPanel {
     private constructor(
         panel: vscode.WebviewPanel,
         extensionUri: vscode.Uri,
-        private readonly outputChannel: vscode.OutputChannel
+        private readonly outputChannel: vscode.OutputChannel,
+        initialDocument?: vscode.TextDocument
     ) {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._renderer = new MarkdownRenderer(extensionUri);
+        this._initialDocument = initialDocument;
 
         // Set the webview's initial html content
         this._update();
@@ -76,8 +83,12 @@ export class PreviewPanel {
 
         // Listen for changes to the active text editor
         vscode.window.onDidChangeActiveTextEditor(
-            () => {
+            (editor) => {
                 if (this._panel.visible) {
+                    // Update initial document if a new markdown file is opened
+                    if (editor && this._isMarkdownDocument(editor.document)) {
+                        this._initialDocument = editor.document;
+                    }
                     this._updateDebounced();
                 }
             },
@@ -89,6 +100,10 @@ export class PreviewPanel {
         vscode.workspace.onDidChangeTextDocument(
             e => {
                 if (this._panel.visible && this._isMarkdownDocument(e.document)) {
+                    // Update the document being previewed if it matches
+                    if (this._initialDocument && e.document.uri.toString() === this._initialDocument.uri.toString()) {
+                        this._initialDocument = e.document;
+                    }
                     this._updateDebounced();
                 }
             },
@@ -132,6 +147,17 @@ export class PreviewPanel {
         return document.languageId === 'markdown';
     }
 
+    private _isDocumentValid(document: vscode.TextDocument): boolean {
+        try {
+            // Check if the document is still open by checking if we can access its content
+            document.getText();
+            return true;
+        } catch (error) {
+            // Document is no longer valid (was closed)
+            return false;
+        }
+    }
+
     private _updateDebounced() {
         // Debounce updates to avoid excessive renders
         if (this._updateTimeout) {
@@ -145,14 +171,29 @@ export class PreviewPanel {
 
     private _update() {
         const activeEditor = vscode.window.activeTextEditor;
+        let document: vscode.TextDocument | undefined;
         
-        if (!activeEditor) {
+        // Try to use the active editor's document first
+        if (activeEditor && this._isMarkdownDocument(activeEditor.document)) {
+            document = activeEditor.document;
+            this._initialDocument = document; // Update our reference
+        } 
+        // If no active editor or not markdown, use the initial document if it's still valid
+        else if (this._initialDocument && this._isDocumentValid(this._initialDocument) && this._isMarkdownDocument(this._initialDocument)) {
+            document = this._initialDocument;
+        }
+        
+        // If no document available, show welcome screen
+        if (!document) {
+            // Clear invalid document reference
+            if (this._initialDocument && !this._isDocumentValid(this._initialDocument)) {
+                this._initialDocument = undefined;
+            }
             this._panel.webview.html = this._getWelcomeHtml();
             return;
         }
-
-        const document = activeEditor.document;
         
+        // If document is not markdown, show not markdown screen
         if (!this._isMarkdownDocument(document)) {
             this._panel.webview.html = this._getNotMarkdownHtml();
             return;
@@ -178,7 +219,7 @@ export class PreviewPanel {
 
     private _getWelcomeHtml(): string {
         return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-md-color-scheme="slate">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -187,40 +228,46 @@ export class PreviewPanel {
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             padding: 2rem;
-            background-color: #fafafa;
-            color: #333;
+            background-color: #1e1e1e;
+            color: rgba(255, 255, 255, 0.87);
             text-align: center;
         }
         .welcome-container {
             max-width: 600px;
             margin: 0 auto;
             padding: 2rem;
-            background: white;
+            background: #2d2d2d;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
         .welcome-icon {
             font-size: 4rem;
             margin-bottom: 1rem;
         }
         h1 {
-            color: #1976d2;
+            color: #82b1ff;
             margin-bottom: 1rem;
         }
         p {
             line-height: 1.6;
-            color: #666;
+            color: rgba(255, 255, 255, 0.7);
         }
         .instruction {
-            background-color: #f5f5f5;
+            background-color: #3c3c3c;
             padding: 1rem;
             border-radius: 4px;
             margin-top: 1rem;
             font-style: italic;
         }
+        code {
+            background-color: #404040;
+            color: #e1e1e1;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+        }
     </style>
 </head>
-<body>
+<body data-md-color-scheme="slate">
     <div class="welcome-container">
         <div class="welcome-icon">📄</div>
         <h1>Markdown Preview</h1>
@@ -236,7 +283,7 @@ export class PreviewPanel {
 
     private _getNotMarkdownHtml(): string {
         return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-md-color-scheme="slate">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -245,33 +292,39 @@ export class PreviewPanel {
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             padding: 2rem;
-            background-color: #fafafa;
-            color: #333;
+            background-color: #1e1e1e;
+            color: rgba(255, 255, 255, 0.87);
             text-align: center;
         }
         .message-container {
             max-width: 600px;
             margin: 0 auto;
             padding: 2rem;
-            background: white;
+            background: #2d2d2d;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
         .message-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
         }
         h2 {
-            color: #ff9100;
+            color: #ffb74d;
             margin-bottom: 1rem;
         }
         p {
             line-height: 1.6;
-            color: #666;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        code {
+            background-color: #404040;
+            color: #e1e1e1;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
         }
     </style>
 </head>
-<body>
+<body data-md-color-scheme="slate">
     <div class="message-container">
         <div class="message-icon">⚠️</div>
         <h2>Not a Markdown File</h2>
@@ -285,7 +338,7 @@ export class PreviewPanel {
     private _getErrorHtml(error: any): string {
         const errorMessage = error?.message || error?.toString() || 'Unknown error';
         return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-md-color-scheme="slate">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -294,43 +347,43 @@ export class PreviewPanel {
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             padding: 2rem;
-            background-color: #fafafa;
-            color: #333;
+            background-color: #1e1e1e;
+            color: rgba(255, 255, 255, 0.87);
             text-align: center;
         }
         .error-container {
             max-width: 600px;
             margin: 0 auto;
             padding: 2rem;
-            background: white;
+            background: #2d2d2d;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-left: 4px solid #ff5252;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            border-left: 4px solid #ef5350;
         }
         .error-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
         }
         h2 {
-            color: #ff5252;
+            color: #ef5350;
             margin-bottom: 1rem;
         }
         p {
             line-height: 1.6;
-            color: #666;
+            color: rgba(255, 255, 255, 0.7);
         }
         .error-details {
-            background-color: #ffebee;
+            background-color: #3c2222;
             padding: 1rem;
             border-radius: 4px;
             margin-top: 1rem;
             font-family: monospace;
             text-align: left;
-            color: #c62828;
+            color: #ff8a80;
         }
     </style>
 </head>
-<body>
+<body data-md-color-scheme="slate">
     <div class="error-container">
         <div class="error-icon">🚨</div>
         <h2>Preview Error</h2>

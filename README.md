@@ -2,6 +2,10 @@
 
 Visual Studio Code extension that allows you to create, edit, publish, download, and synchronize Confluence pages directly from your editor, using `.confluence` files in a custom XML format named Confluence Storage Format.
 
+## ☕️ Buy me a coffe
+Enjoying the Confluence Smart Publisher extension?
+[Support its development by buying me a coffee and help keep it running!](https://www.paypal.com/donate/?business=ESQ3RSFYC6JMY&no_recurring=0&item_name=Enjoying+the+Confluence+Smart+Publisher+extension?%0ASupport+its+development+by+buying+me+a+coffee+and+help+keep+it+running%21&currency_code=BRL)
+
 ## 🎬 Extension in Action
 
 ### 🩺 Real-time Diagnostics
@@ -16,21 +20,17 @@ Visualize problemas de estrutura e tags em tempo real, com dicas e correções a
 </div>
 Formate seus arquivos `.confluence` automaticamente, com numeração de capítulos e padronização de tags.
 
-## ☕️ Buy me a coffe
-Enjoying the Confluence Smart Publisher extension?
-[Support its development by buying me a coffee and help keep it running!](https://www.paypal.com/donate/?business=ESQ3RSFYC6JMY&no_recurring=0&item_name=Enjoying+the+Confluence+Smart+Publisher+extension?%0ASupport+its+development+by+buying+me+a+coffee+and+help+keep+it+running%21&currency_code=BRL)
-
-
 ## 📋 Table of Contents
 
 - [🚀 Confluence Smart Publisher](#-confluence-smart-publisher)
+  - [☕️ Buy me a coffe](#️-buy-me-a-coffe)
   - [🎬 Extension in Action](#-extension-in-action)
     - [🩺 Real-time Diagnostics](#-real-time-diagnostics)
     - [🛠️ Smart Formatter](#️-smart-formatter)
-  - [☕️ Buy me a coffe](#️-buy-me-a-coffe)
   - [📋 Table of Contents](#-table-of-contents)
   - [✨ Features](#-features)
-    - [🎨 Material for MkDocs Support](#-material-for-mkdocs-support)
+    - [🔍 NEW: Material for MkDocs Live Preview](#-new-material-for-mkdocs-live-preview)
+    - [🎨 Material for MkDocs Conversion Support](#-material-for-mkdocs-conversion-support)
     - [🎮 Commands](#-commands)
     - [🔄 UNIQUE FEATURE: Metadata synchronization!](#-unique-feature-metadata-synchronization)
     - [🔍 Validations and Diagnostics](#-validations-and-diagnostics)
@@ -44,10 +44,16 @@ Enjoying the Confluence Smart Publisher extension?
   - [🔧 Extension Settings](#-extension-settings)
   - [📄 .confluence File Structure](#-confluence-file-structure)
   - [🧩 Dependencies](#-dependencies)
+    - [Core Dependencies](#core-dependencies)
+    - [Preview System Dependencies](#preview-system-dependencies)
+      - [Styling and Theming](#styling-and-theming)
   - [🚧 Known Issues](#-known-issues)
   - [🧑‍💻 Contributing](#-contributing)
   - [ℹ️ More Information](#ℹ️-more-information)
+  - [🙏 Acknowledgments](#-acknowledgments)
   - [📄 License](#-license)
+    - [Third-Party Licenses](#third-party-licenses)
+
 
 ## ✨ Features
 
@@ -95,7 +101,7 @@ Enhanced support for **Material for MkDocs** format conversion:
 - **Html Entities Decode**: Automatic conversion of HTML entities to special characters when downloading pages. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/decode-html)
 - **Set title emoji**: Easily add emojis to your page titles directly in VSCode. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/set-title-emoji)
 
-> All commands are available in the file explorer context menu when right-clicking on `.confluence` files or folders, in the "Confluence Smart Publisher" submenu.
+> All commands are available in the "Confluence Smart Publisher" submenu when you right-click on a `.confluence` file, an `.md` file, or any folder.
 
 ### 🔄 UNIQUE FEATURE: Metadata synchronization!
 
@@ -161,6 +167,9 @@ This extension adds the following settings to VSCode:
 | `confluenceSmartPublisher.apiToken`              | Confluence API Token                                                                         |
 | `confluenceSmartPublisher.format.numberChapters` | Automatically numbers chapters when formatting the `.confluence` document (default: true)    |
 | `confluenceSmartPublisher.htmlEntitiesDecode`    | Activates automatic conversion of HTML entities to special characters when downloading pages (default: false) |
+| `confluenceSmartPublisher.mathRenderer`          | Escolha o renderizador matemático para blocos de fórmulas baseado em onde o markdown será visualizado (default: katex) |
+| `confluenceSmartPublisher.`    | Activates automatic conversion of HTML entities to special characters when downloading pages (default: false) |
+| `confluenceSmartPublisher.`    | Activates automatic conversion of HTML entities to special characters when downloading pages (default: false) |
 
 ## 📄 .confluence File Structure
 This extension adds a `<csp:parameters>` block to the document, which is used internally by the Confluence Smart Publisher extension, and whose values can be modified.
@@ -211,7 +220,7 @@ Example:
 - [markdown-it-admonition](https://github.com/brad-jones/markdown-it-admonition)
    - Plugin for markdown-it that adds support for Material for MkDocs admonition syntax.
 
-### Styling and Theming
+#### Styling and Theming
 - [Material for MkDocs](https://github.com/squidfunk/mkdocs-material) (CSS Assets)
    - Official Material Design theme for MkDocs, providing authentic styling for the preview system.
    - Version: 9.6.15

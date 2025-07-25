@@ -157,11 +157,11 @@
             "latex"
           ],
           "enumDescriptions": [
-            "KaTeX - Rápido e leve. Usado em: VS Code, algumas extensões GitHub, sites com foco em performance. Aplica sanitização automática (ex: escapa underscores em \\text{}). Ideal para a maioria dos casos.",
-            "MathJax - Suporte LaTeX mais amplo. Usado em: GitHub nativo, Jupyter notebooks, sites acadêmicos. Sintaxe mais tolerante, mas renderização mais lenta. Escolha para fórmulas complexas.",
-            "LaTeX Puro - Sintaxe original sem modificações. Usado em: documentos científicos, quando você precisa da sintaxe exata do LaTeX. Pode não funcionar em todos os visualizadores web."
+            "KaTeX - Fast and lightweight. Used in: VS Code, some GitHub extensions, performance-focused sites. Applies automatic sanitization (e.g., escapes underscores in \\text{}). Ideal for most cases.",
+            "MathJax - Broader LaTeX support. Used in: GitHub native, Jupyter notebooks, academic sites. More tolerant syntax, but slower rendering. Choose for complex formulas.",
+            "Pure LaTeX - Original syntax without modifications. Used in: scientific documents, when you need exact LaTeX syntax. May not work in all web viewers."
           ],
-          "description": "Escolha o renderizador matemático para blocos de fórmulas baseado em onde o markdown será visualizado"
+          "description": "Choose the math renderer for formula blocks based on where the markdown will be viewed"
         }
       }
     },
