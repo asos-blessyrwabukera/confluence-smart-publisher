@@ -51,15 +51,37 @@ Enjoying the Confluence Smart Publisher extension?
 
 ## ✨ Features
 
-### 🎨 Material for MkDocs Support
+### 🔍 NEW: Material for MkDocs Live Preview
 
-The extension now includes enhanced support for **Material for MkDocs** format:
+The extension now includes a **high-fidelity Markdown preview system** with authentic Material for MkDocs styling:
+
+- **🎨 Pixel-Perfect Rendering**: Uses real CSS from mkdocs-material repository (v9.6.15) for authentic visual output
+- **📝 Advanced Admonitions**: Full support for 8 admonition types with proper Material Design colors and icons
+  - `!!! note "Note Title"` - Blue informational blocks
+  - `!!! tip "Tip Title"` - Green helpful suggestions  
+  - `!!! warning "Warning Title"` - Orange cautionary blocks
+  - `!!! danger "Danger Title"` - Red critical alerts
+  - `!!! success "Success Title"` - Green success indicators
+  - `!!! info "Info Title"` - Cyan informational blocks
+  - `!!! question "Question Title"` - Purple FAQ blocks
+  - `!!! quote "Quote Title"` - Gray citation blocks
+- **⚡ Real-Time Updates**: Auto-refresh preview with debounced updates (300ms) as you type
+- **📱 Responsive Design**: Mobile-friendly preview that adapts to all screen sizes
+- **🎯 Smart Context Detection**: Automatically recognizes Markdown files and provides appropriate UI states
+- **🔧 Easy Access**: Available via Command Palette (`Confluence Smart Publisher: Open Markdown Preview`) and context menu
+
+> **Usage**: Open any `.md` file, right-click and select "Open Markdown Preview" or use `Ctrl+Shift+P` → "Confluence Smart Publisher: Open Markdown Preview"
+
+### 🎨 Material for MkDocs Conversion Support
+
+Enhanced support for **Material for MkDocs** format conversion:
 - **Admonition Conversion**: Confluence panels are automatically converted to Material for MkDocs admonition syntax (`!!! type "title"`)
 - **Complete Type Mapping**: Support for all Confluence panel types including `info`, `warning`, `success`, `error`, `tip`, `note`, `example`, `quote`, `abstract`, `failure`, `bug`, `question`, and `custom`
 - **Smart Formatting**: First paragraph becomes the admonition title, remaining content is properly indented
 - **Fallback Support**: Unknown panel types gracefully fallback to `note` admonition type
 
 ### 🎮 Commands
+- **🔍 Markdown Preview**: Live preview of Markdown files with Material for MkDocs styling and admonition support. Perfect for documentation workflows.
 - **Direct publishing**: Publish `.confluence` files as pages on Confluence with a single click. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/publish-document)
 - **Page downloading**: Download Confluence pages by title or ID, converting them to local editable format. [📚 Documentation by title](https://antoniocarelli.github.io/confluence-smart-publisher/docs/download-by-title)  [📚 Documentation by id](https://antoniocarelli.github.io/confluence-smart-publisher/docs/download-by-id)
 - **Synchronization**: Compare and synchronize local content with what's published on Confluence, choosing which version to keep. [📚 Documentation](https://antoniocarelli.github.io/confluence-smart-publisher/docs/sync-with-published)
@@ -167,6 +189,7 @@ Example:
 
 ## 🧩 Dependencies
 
+### Core Dependencies
 - [cheerio](https://cheerio.js.org/)
    - Manipulation and parsing of HTML/XML in jQuery style, facilitating the extraction and modification of elements.
 - [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser)
@@ -181,6 +204,18 @@ Example:
    - Library for decoding HTML entities, used in the decoding functionality.
 - [emoji-mart](https://github.com/missive/emoji-mart)
    - Emoji picker used to add emojis to titles.
+
+### Preview System Dependencies
+- [markdown-it](https://github.com/markdown-it/markdown-it)
+   - Markdown parser with extensible architecture, used for high-fidelity preview rendering.
+- [markdown-it-admonition](https://github.com/brad-jones/markdown-it-admonition)
+   - Plugin for markdown-it that adds support for Material for MkDocs admonition syntax.
+
+### Styling and Theming
+- [Material for MkDocs](https://github.com/squidfunk/mkdocs-material) (CSS Assets)
+   - Official Material Design theme for MkDocs, providing authentic styling for the preview system.
+   - Version: 9.6.15
+   - Files integrated: `main.scss`, `palette.scss`, `_admonition.scss`
 
 ## 🚧 Known Issues
 
@@ -207,9 +242,26 @@ Contributions are welcome! Follow the Extension Guidelines to ensure best practi
 - [Official Confluence Storage Format documentation](https://confluence.atlassian.com/doc/confluence-storage-format-790796544.html)
    - This documentation is for the Data Center version, but much of it applies to the Cloud version.
 
+## 🙏 Acknowledgments
+
+This extension leverages several excellent open-source projects:
+
+- **[Material for MkDocs](https://github.com/squidfunk/mkdocs-material)** by Martin Donath - For the beautiful Material Design theme and CSS assets that power our preview system
+- **[markdown-it](https://github.com/markdown-it/markdown-it)** - For the robust and extensible Markdown parser
+- **[markdown-it-admonition](https://github.com/brad-jones/markdown-it-admonition)** by Brad Jones - For seamless admonition support
+- **Atlassian Confluence** - For providing the platform and APIs that make this extension possible
+
+Special thanks to the maintainers and contributors of these projects for their excellent work.
+
 ## 📄 License
 
 This extension is distributed under the MIT license. See the LICENSE file for more details.
+
+### Third-Party Licenses
+
+- **Material for MkDocs**: MIT License - Copyright (c) 2016-2025 Martin Donath
+- **markdown-it**: MIT License - Copyright (c) 2014 Vitaly Puzrin, Alex Kocharin
+- **markdown-it-admonition**: MIT License - Copyright (c) 2020 Brad Jones
 
 ---
 
