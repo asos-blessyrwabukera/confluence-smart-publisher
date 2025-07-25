@@ -167,9 +167,7 @@ This extension adds the following settings to VSCode:
 | `confluenceSmartPublisher.apiToken`              | Confluence API Token                                                                         |
 | `confluenceSmartPublisher.format.numberChapters` | Automatically numbers chapters when formatting the `.confluence` document (default: true)    |
 | `confluenceSmartPublisher.htmlEntitiesDecode`    | Activates automatic conversion of HTML entities to special characters when downloading pages (default: false) |
-| `confluenceSmartPublisher.mathRenderer`          | Escolha o renderizador matemático para blocos de fórmulas baseado em onde o markdown será visualizado (default: katex) |
-| `confluenceSmartPublisher.`    | Activates automatic conversion of HTML entities to special characters when downloading pages (default: false) |
-| `confluenceSmartPublisher.`    | Activates automatic conversion of HTML entities to special characters when downloading pages (default: false) |
+| `confluenceSmartPublisher.mathRenderer`          | Choose the mathematical renderer for formula blocks based on where the markdown will be viewed (default: katex) |
 
 ## 📄 .confluence File Structure
 This extension adds a `<csp:parameters>` block to the document, which is used internally by the Confluence Smart Publisher extension, and whose values can be modified.
