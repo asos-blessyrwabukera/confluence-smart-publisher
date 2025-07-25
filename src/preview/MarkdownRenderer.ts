@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // Import markdown-it-admonition plugin
 const markdownItAdmonition = require('markdown-it-admonition');
@@ -150,10 +151,89 @@ export class MarkdownRenderer {
 
     /**
      * Returns Material for MkDocs CSS styles
-     * This should be replaced with actual Material for MkDocs CSS
+     * Loads CSS files from assets/css/ directory if available, otherwise uses fallback
      * @returns CSS string
      */
     private getMaterialCss(): string {
+        const cssFiles = [
+            'material.css',
+            'palette.scss',
+            'admonitions.scss'
+        ];
+        
+        let combinedCss = '';
+        
+        for (const file of cssFiles) {
+            try {
+                const cssPath = path.join(this.extensionUri.fsPath, 'assets', 'css', file);
+                if (fs.existsSync(cssPath)) {
+                    let content = fs.readFileSync(cssPath, 'utf-8');
+                    
+                    // Basic SCSS variable processing for colors
+                    if (file.endsWith('.scss')) {
+                        content = this.processSCSSVariables(content);
+                    }
+                    
+                    combinedCss += content + '\n';
+                }
+            } catch (error) {
+                console.warn(`Could not load CSS file: ${file}`, error);
+            }
+        }
+        
+        return combinedCss || this.getFallbackCss();
+    }
+
+    /**
+     * Basic SCSS variable processing
+     * @param scss SCSS content
+     * @returns Processed CSS
+     */
+    private processSCSSVariables(scss: string): string {
+        // Basic color variables from Material Design
+        const colorMap: { [key: string]: string } = {
+            '$clr-blue-a200': '#448aff',
+            '$clr-light-blue-a400': '#00bcd4',
+            '$clr-cyan-a700': '#00b8d4',
+            '$clr-teal-a700': '#00bfa5',
+            '$clr-green-a700': '#00c853',
+            '$clr-light-green-a700': '#64dd17',
+            '$clr-orange-a400': '#ff9100',
+            '$clr-red-a200': '#ff5252',
+            '$clr-red-a400': '#ff1744',
+            '$clr-pink-a400': '#f50057',
+            '$clr-deep-purple-a200': '#7c4dff',
+            '$clr-grey': '#9e9e9e'
+        };
+
+        // Remove SCSS comments and imports
+        let css = scss
+            .replace(/\/\/\/.*$/gm, '') // Remove triple slash comments
+            .replace(/\/\/.*$/gm, '')   // Remove double slash comments
+            .replace(/@import.*?;/g, '') // Remove imports
+            .replace(/@use.*?;/g, '')    // Remove use statements
+            .replace(/\/\*[\s\S]*?\*\//g, ''); // Remove block comments
+
+        // Replace color variables
+        for (const [variable, color] of Object.entries(colorMap)) {
+            css = css.replace(new RegExp('\\' + variable, 'g'), color);
+        }
+
+        // Remove SCSS specific syntax
+        css = css
+            .replace(/\$[a-zA-Z0-9-_]+:/g, '--') // Convert SCSS variables to CSS custom properties
+            .replace(/!default/g, '') // Remove !default
+            .replace(/@use\s+["'][^"']+["']/g, '') // Remove @use statements
+            .replace(/\$admonitions:\s*\([^)]+\)\s*!default;/s, ''); // Remove admonition map
+
+        return css;
+    }
+
+    /**
+     * Returns fallback CSS when Material for MkDocs files are not available
+     * @returns CSS string
+     */
+    private getFallbackCss(): string {
         return `
 /* Material for MkDocs Base Styles */
 :root {
