@@ -2,7 +2,7 @@
   "name": "confluence-smart-publisher",
   "displayName": "Confluence Smart Publisher",
   "description": "Publish and manage Confluence pages directly from VS Code",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "icon": "images/csp-icon.png",
   "engines": {
     "vscode": "^1.96.0"
@@ -49,6 +49,14 @@
       {
         "command": "confluence-smart-publisher.convertMarkdown",
         "title": "Convert to Confluence Format"
+      },
+      {
+        "command": "confluence-smart-publisher.convertConfluenceToMarkdown",
+        "title": "Convert Confluence to Markdown"
+      },
+      {
+        "command": "confluence-smart-publisher.preview",
+        "title": "Open Markdown Preview"
       }
     ],
     "submenus": [
@@ -101,6 +109,14 @@
         {
           "command": "confluence-smart-publisher.convertMarkdown",
           "when": "resourceExtname == .md"
+        },
+        {
+          "command": "confluence-smart-publisher.convertConfluenceToMarkdown",
+          "when": "resourceExtname == .confluence"
+        },
+        {
+          "command": "confluence-smart-publisher.preview",
+          "when": "resourceExtname == .md"
         }
       ]
     },
@@ -131,6 +147,21 @@
           "type": "boolean",
           "default": false,
           "description": "Decode HTML entities when downloading Confluence files."
+        },
+        "confluenceSmartPublisher.mathRenderer": {
+          "type": "string",
+          "default": "katex",
+          "enum": [
+            "katex",
+            "mathjax",
+            "latex"
+          ],
+          "enumDescriptions": [
+            "KaTeX - Fast and lightweight. Used in: VS Code, some GitHub extensions, performance-focused sites. Applies automatic sanitization (e.g., escapes underscores in \\text{}). Ideal for most cases.",
+            "MathJax - Broader LaTeX support. Used in: GitHub native, Jupyter notebooks, academic sites. More tolerant syntax, but slower rendering. Choose for complex formulas.",
+            "Pure LaTeX - Original syntax without modifications. Used in: scientific documents, when you need exact LaTeX syntax. May not work in all web viewers."
+          ],
+          "description": "Choose the math renderer for formula blocks based on where the markdown will be viewed"
         }
       }
     },
@@ -145,7 +176,7 @@
           ".confluence"
         ],
         "mimetypes": [
-          "text/xml"
+          "application/json"
         ],
         "configuration": "./language-configuration/confluence-language-configuration.json"
       }
@@ -173,11 +204,14 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "build": "npm run compile"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/glob": "^8.1.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/markdown-it": "^14.1.2",
     "@types/marked": "^5.0.2",
     "@types/mocha": "^10.0.6",
     "@types/node": "20.x",
@@ -197,14 +231,18 @@
   "dependencies": {
     "@emoji-mart/data": "^1.1.2",
     "@emoji-mart/react": "^1.1.1",
-    "cheerio": "^1.0.0",
+    "@types/turndown": "^5.0.5",
     "emoji-mart": "^5.4.0",
     "entities": "^6.0.0",
     "form-data": "^4.0.0",
     "fs-extra": "^11.2.0",
+    "js-yaml": "^4.1.0",
+    "markdown-it": "^14.1.0",
+    "markdown-it-admonition": "^1.0.4",
     "marked": "^12.0.0",
     "node-fetch": "^2.7.0",
-    "xml-escape": "^1.1.0"
+    "turndown": "^7.2.0",
+    "yaml": "^2.8.0"
   },
   "publisher": "AntonioCarelli",
   "repository": {
