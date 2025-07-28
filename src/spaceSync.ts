@@ -255,7 +255,7 @@ export class SpaceSync {
     private async downloadPage(change: SpaceSyncChange, localSpaceDir: string): Promise<void> {
         const filePath = await this.client.downloadConfluencePage(
             change.pageId, 
-            BodyFormat.STORAGE, 
+            BodyFormat.ATLAS_DOC_FORMAT, 
             localSpaceDir
         );
         this.outputChannel.appendLine(`[Space Sync] Downloaded: ${change.title}`);

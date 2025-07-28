@@ -63,7 +63,6 @@ export class ConfluenceClient {
         return await resp.json() as any;
     }
 
-<<<<<<< HEAD
     async getAllPagesInSpace(spaceId: string): Promise<any[]> {
         const { default: fetch } = await import('node-fetch');
         const allPages: any[] = [];
@@ -92,7 +91,7 @@ export class ConfluenceClient {
         return allPages;
     }
 
-    async downloadSpacePages(spaceId: string, outputDir: string = 'Downloaded', bodyFormat: BodyFormat = BodyFormat.STORAGE): Promise<string[]> {
+    async downloadSpacePages(spaceId: string, outputDir: string = 'Downloaded', bodyFormat: BodyFormat = BodyFormat.ATLAS_DOC_FORMAT): Promise<string[]> {
         const pages = await this.getAllPagesInSpace(spaceId);
         const downloadedFiles: string[] = [];
         
@@ -126,10 +125,7 @@ export class ConfluenceClient {
         return downloadedFiles;
     }
 
-    async downloadConfluencePage(pageId: string, bodyFormat: BodyFormat = BodyFormat.STORAGE, outputDir: string = 'Downloaded'): Promise<string> {
-=======
     async downloadConfluencePage(pageId: string, bodyFormat: BodyFormat = BodyFormat.ATLAS_DOC_FORMAT, outputDir: string = 'Downloaded'): Promise<string> {
->>>>>>> upstream/main
         const { default: fetch } = await import('node-fetch');
         const page = await this.getPageById(pageId, bodyFormat);
         if (!page) {throw new Error(`Page with ID ${pageId} not found.`);}

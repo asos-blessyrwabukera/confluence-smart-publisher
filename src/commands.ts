@@ -151,7 +151,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 }
                 
                 progress.report({ message: `Downloading ${pages.length} pages...` });
-                const downloadedFiles = await client.downloadSpacePages(spaceId, uri.fsPath, BodyFormat.STORAGE);
+                const downloadedFiles = await client.downloadSpacePages(spaceId, uri.fsPath, BodyFormat.ATLAS_DOC_FORMAT);
                 
                 const successCount = downloadedFiles.length;
                 const failedCount = pages.length - successCount;
