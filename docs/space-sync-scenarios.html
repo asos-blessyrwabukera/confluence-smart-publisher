@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>space-sync-scenarios</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<h1 id="space-download-and-sync-scenarios">Space Download and Sync
+Scenarios</h1>
+<p>This document explains what happens when you download a space again
+or want to sync changes between local and remote Confluence spaces.</p>
+<h2 id="scenario-1-downloading-the-same-space-again">Scenario 1:
+Downloading the Same Space Again</h2>
+<h3 id="current-behavior-simple-download">Current Behavior (Simple
+Download)</h3>
+<p>When you use <strong>“Download Entire Space by ID”</strong> on the
+same space multiple times:</p>
+<pre class="text"><code>First Download:
+📁 selected-folder/
+└── 📁 space_PROJKEY/
+    ├── 📄 Page 1.confluence
+    ├── 📄 Page 2.confluence
+    └── 📄 Page 3.confluence
+
+Second Download (same space):
+📁 selected-folder/
+└── 📁 space_PROJKEY/    ← Same folder
+    ├── 📄 Page 1.confluence  ← OVERWRITTEN
+    ├── 📄 Page 2.confluence  ← OVERWRITTEN  
+    ├── 📄 Page 3.confluence  ← OVERWRITTEN
+    └── 📄 New Page.confluence ← NEW</code></pre>
+<p><strong>⚠️ WARNING</strong>: - <strong>All local changes are
+lost</strong> - files are completely overwritten - <strong>No backup is
+created</strong> - <strong>No conflict detection</strong> - New pages
+from Confluence are added - Deleted pages remain locally (orphaned
+files)</p>
+<h3 id="recommended-approach-use-space-sync-instead">Recommended
+Approach: Use Space Sync Instead</h3>
+<p>For safer operations, use the <strong>“Sync Space”</strong> command
+which provides: - Conflict detection - Backup options - User choice for
+each conflict - Selective synchronization</p>
+<h2 id="scenario-2-syncing-space-changes">Scenario 2: Syncing Space
+Changes</h2>
+<p>The <code>SpaceSync</code> class provides sophisticated
+synchronization with multiple strategies:</p>
+<h3 id="sync-strategies-available">Sync Strategies Available</h3>
+<h4 id="interactive-sync-syncstrategy.ask_user">1. <strong>Interactive
+Sync</strong> (<code>SyncStrategy.ASK_USER</code>)</h4>
+<ul>
+<li><strong>Best for</strong>: When you have local changes you want to
+preserve</li>
+<li><strong>Process</strong>:
+<ol type="1">
+<li>Analyzes differences between local and remote</li>
+<li>Shows you each conflict</li>
+<li>Lets you choose: Keep Local, Use Remote, or View Diff</li>
+<li>Creates backup before any overwrites</li>
+</ol></li>
+</ul>
+<pre class="text"><code>Conflict Detection:
+📄 Page 1.confluence
+   Local:  Modified 2 hours ago (v5)
+   Remote: Modified 1 hour ago (v6)
+   👤 Action: [Keep Local] [Use Remote] [View Diff]</code></pre>
+<h4 id="download-wins-syncstrategy.download_wins">2. <strong>Download
+Wins</strong> (<code>SyncStrategy.DOWNLOAD_WINS</code>)</h4>
+<ul>
+<li><strong>Best for</strong>: When remote is authoritative</li>
+<li><strong>Process</strong>:
+<ol type="1">
+<li>Downloads all remote changes</li>
+<li>Overwrites local files</li>
+<li>Creates backup in <code>backup_TIMESTAMP/</code> folder</li>
+<li>Local changes are preserved in backup only</li>
+</ol></li>
+</ul>
+<h4 id="local-wins-syncstrategy.local_wins">3. <strong>Local
+Wins</strong> (<code>SyncStrategy.LOCAL_WINS</code>)</h4>
+<ul>
+<li><strong>Best for</strong>: When you want to publish all local
+changes</li>
+<li><strong>Process</strong>:
+<ol type="1">
+<li>Uploads all local changes to Confluence</li>
+<li>Remote changes are overwritten</li>
+<li>No backup needed (remote has version history)</li>
+</ol></li>
+</ul>
+<h4 id="backup-and-download-syncstrategy.backup_and_download">4.
+<strong>Backup and Download</strong>
+(<code>SyncStrategy.BACKUP_AND_DOWNLOAD</code>)</h4>
+<ul>
+<li><strong>Best for</strong>: Safe download with automatic backup</li>
+<li><strong>Process</strong>:
+<ol type="1">
+<li>Creates complete backup of local space</li>
+<li>Downloads all remote content</li>
+<li>Backup location: <code>backup_YYYY-MM-DD_HH-MM-SS/</code></li>
+</ol></li>
+</ul>
+<h2 id="change-detection-logic">Change Detection Logic</h2>
+<p>The sync system detects changes by comparing:</p>
+<h3 id="version-numbers">1. <strong>Version Numbers</strong></h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">// From CSP metadata in .confluence files</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>csp<span class="op">:</span>file_id<span class="op">&gt;</span><span class="dv">123456</span><span class="op">&lt;/</span>csp<span class="op">:</span>file_id<span class="op">&gt;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">// Compared with Confluence API version numbers</span></span></code></pre></div>
+<h3 id="file-modification-times">2. <strong>File Modification
+Times</strong></h3>
+<ul>
+<li>Local file system timestamps</li>
+<li>Confluence <code>lastModified</code> timestamps</li>
+</ul>
+<h3 id="content-hash-future-enhancement">3. <strong>Content
+Hash</strong> (Future Enhancement)</h3>
+<ul>
+<li>MD5 hash of content for precise change detection</li>
+</ul>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="example-1-safe-re-download-with-backup">Example 1: Safe
+Re-download with Backup</h3>
+<pre class="text"><code>1. Right-click on space_PROJKEY folder
+2. Select &quot;Confluence Smart Publisher &gt; Sync Space&quot;
+3. Choose &quot;Backup and Download&quot;
+4. Result:
+   📁 selected-folder/
+   ├── 📁 space_PROJKEY/          ← Updated content
+   └── 📁 backup_2025-07-19_14-30/ ← Your old files</code></pre>
+<h3 id="example-2-interactive-conflict-resolution">Example 2:
+Interactive Conflict Resolution</h3>
+<pre class="text"><code>1. You modified: &quot;Page 1.confluence&quot; locally
+2. Someone else modified it on Confluence
+3. Sync detects conflict and shows options:
+   
+   ⚠️ CONFLICT DETECTED
+   📄 Page 1.confluence
+   
+   Local Version:  Modified 2 hours ago
+   Remote Version: Modified 1 hour ago
+   
+   Actions:
+   [1] Keep Local Version
+   [2] Use Remote Version  
+   [3] View Differences
+   [4] Skip This File
+   
+   Choose action (1-4): _</code></pre>
+<h3 id="example-3-bulk-upload-local-changes">Example 3: Bulk Upload
+Local Changes</h3>
+<pre class="text"><code>1. You&#39;ve edited multiple pages locally
+2. Want to publish all changes to Confluence
+3. Use &quot;Local Wins&quot; strategy
+4. All local files overwrite remote content</code></pre>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="do">🟢 DO:</h3>
+<ul>
+<li><strong>Use Space Sync</strong> instead of re-downloading for
+existing spaces</li>
+<li><strong>Choose “Interactive”</strong> when you have local
+changes</li>
+<li><strong>Review conflicts</strong> carefully before choosing
+action</li>
+<li><strong>Keep backups</strong> when unsure</li>
+<li><strong>Commit changes to Git</strong> before major sync
+operations</li>
+</ul>
+<h3 id="dont">🔴 DON’T:</h3>
+<ul>
+<li><strong>Re-download</strong> over existing spaces with local
+changes</li>
+<li><strong>Use “Download Wins”</strong> without backup if you have
+local changes</li>
+<li><strong>Ignore conflict warnings</strong></li>
+<li><strong>Delete backup folders</strong> immediately after sync</li>
+</ul>
+<h2 id="technical-implementation">Technical Implementation</h2>
+<p>The space sync functionality is implemented in: -
+<code>src/spaceSync.ts</code> - Core synchronization logic -
+<code>src/commands.ts</code> - VS Code command integration -
+<code>src/confluenceClient.ts</code> - API communication</p>
+<h3 id="key-methods">Key Methods:</h3>
+<ul>
+<li><code>analyzeSpaceChanges()</code> - Detects differences</li>
+<li><code>syncSpace()</code> - Performs synchronization</li>
+<li><code>createBackup()</code> - Creates safety backups</li>
+<li><code>resolveConflict()</code> - Handles user choices</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="issue-no-conflicts-detected-but-files-are-different">Issue: “No
+conflicts detected but files are different”</h3>
+<p><strong>Solution</strong>: Check if CSP metadata is present in local
+files</p>
+<h3 id="issue-sync-fails-with-permission-errors">Issue: “Sync fails with
+permission errors”</h3>
+<p><strong>Solution</strong>: Verify Confluence API credentials and page
+permissions</p>
+<h3 id="issue-backup-folder-is-very-large">Issue: “Backup folder is very
+large”</h3>
+<p><strong>Solution</strong>: Clean up old backups periodically,
+configure backup retention</p>
+<h3 id="issue-some-pages-didnt-sync">Issue: “Some pages didn’t
+sync”</h3>
+<p><strong>Solution</strong>: Check output channel for detailed error
+messages</p>
+<h2 id="future-enhancements">Future Enhancements</h2>
+<ol type="1">
+<li><strong>Smart Merge</strong>: Automatic merging of non-conflicting
+changes</li>
+<li><strong>Partial Sync</strong>: Sync only specific pages or
+sections</li>
+<li><strong>Scheduled Sync</strong>: Automatic periodic
+synchronization</li>
+<li><strong>Conflict Preview</strong>: Side-by-side diff view before
+choosing action</li>
+<li><strong>Sync History</strong>: Track all sync operations with
+rollback capability</li>
+</ol>
+</body>
+</html>
