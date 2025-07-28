@@ -4,13 +4,10 @@ import * as path from 'path';
 import { formatConfluenceDocument, decodeHtmlEntities } from './confluenceFormatter';
 import { getEmojiPickerHtml } from './webview';
 import { MarkdownConverter } from './markdownConverter';
-<<<<<<< HEAD
 import { SpaceSync, SyncStrategy } from './spaceSync';
-=======
 import { AdfToMarkdownConverter } from './adf-md-converter/adf-to-md-converter';
 import { createXMLCSPBlock, createYAMLCSPBlock } from './csp-utils';
 import { PreviewPanel } from './preview/PreviewPanel';
->>>>>>> upstream/main
 
 export function registerCommands(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
     // Command to publish .confluence file
