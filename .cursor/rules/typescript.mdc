@@ -22,6 +22,7 @@ Estrutura e Organização
 - Mantenha o projeto modular: separe funcionalidades em arquivos e pastas lógicas (ex: src/utils, src/services, src/commands).
 - Evite arquivos grandes: prefira dividir em módulos menores e reutilizáveis.
 - Siga a estrutura sugerida no README.md do projeto.
+- IFs inline deve SEMPRE estar encapsulados entre chaves ({}).
 
 Nomenclatura
 - Funções e variáveis: use nomes descritivos e em inglês (ex: getUserConfig, isValidInput).
@@ -64,5 +65,4 @@ Testes
 Lint e Formatação
 - Use ESLint e Prettier para manter o padrão de código.
 - Corrija todos os avisos e erros de lint antes de commitar.
-- Sempre utilize chaves {} em blocos if, mesmo para comandos de uma linha, para garantir clareza e evitar bugs sutis.
   

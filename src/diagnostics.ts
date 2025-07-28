@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getUnclosedOrUnopenedTagDiagnostics, getConfluenceDiagnostics } from './confluenceValidator';
+import { getConfluenceDiagnostics } from './confluenceValidator';
 
 export function registerDiagnostics(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
     // Criar uma coleção de diagnósticos
@@ -7,12 +7,10 @@ export function registerDiagnostics(context: vscode.ExtensionContext, outputChan
     context.subscriptions.push(diagnosticCollection);
 
     function updateDiagnostics(document: vscode.TextDocument) {
-        if (document.languageId === 'confluence' || document.languageId === 'xml' || document.fileName.endsWith('.confluence')) {
+        if (document.languageId === 'confluence' || document.fileName.endsWith('.confluence')) {
             const text = document.getText();
-            const diags1 = getUnclosedOrUnopenedTagDiagnostics(text);
-            const diags2 = getConfluenceDiagnostics(text);
-            const allDiags = [...diags1, ...diags2];
-            diagnosticCollection.set(document.uri, allDiags);
+            const diags = getConfluenceDiagnostics(text);
+            diagnosticCollection.set(document.uri, diags);
         } else {
             diagnosticCollection.delete(document.uri);
         }
