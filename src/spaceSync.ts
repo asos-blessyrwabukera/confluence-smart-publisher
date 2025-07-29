@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ConfluenceClient, BodyFormat } from './confluenceClient';
-import { join, basename } from 'path';
+import { join, basename, dirname } from 'path';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'fs';
 
 export interface SpaceSyncChange {
@@ -253,12 +253,103 @@ export class SpaceSync {
     }
 
     private async downloadPage(change: SpaceSyncChange, localSpaceDir: string): Promise<void> {
-        const filePath = await this.client.downloadConfluencePage(
-            change.pageId, 
-            BodyFormat.ATLAS_DOC_FORMAT, 
-            localSpaceDir
-        );
-        this.outputChannel.appendLine(`[Space Sync] Downloaded: ${change.title}`);
+        // First, try to determine if we're using hierarchical structure
+        // by checking if there are subdirectories with confluence files
+        const isHierarchical = this.detectHierarchicalStructure(localSpaceDir);
+        
+        if (isHierarchical) {
+            // For hierarchical structure, we need to determine the correct directory
+            const targetDir = await this.determinePageDirectory(change.pageId, localSpaceDir);
+            const filePath = await this.client.downloadConfluencePage(
+                change.pageId, 
+                BodyFormat.ATLAS_DOC_FORMAT, 
+                targetDir
+            );
+            this.outputChannel.appendLine(`[Space Sync] Downloaded: ${change.title} to ${targetDir}`);
+        } else {
+            // For flat structure, download to the root space directory
+            const filePath = await this.client.downloadConfluencePage(
+                change.pageId, 
+                BodyFormat.ATLAS_DOC_FORMAT, 
+                localSpaceDir
+            );
+            this.outputChannel.appendLine(`[Space Sync] Downloaded: ${change.title}`);
+        }
+    }
+    
+    private detectHierarchicalStructure(localSpaceDir: string): boolean {
+        if (!existsSync(localSpaceDir)) {
+            return false;
+        }
+        
+        const items = readdirSync(localSpaceDir);
+        
+        // Check if there are any subdirectories that contain .confluence files
+        for (const item of items) {
+            const fullPath = join(localSpaceDir, item);
+            const stat = statSync(fullPath);
+            
+            if (stat.isDirectory()) {
+                const subDirFiles = this.getLocalConfluenceFiles(fullPath);
+                if (subDirFiles.length > 0) {
+                    return true; // Found hierarchical structure
+                }
+            }
+        }
+        
+        return false; // Only flat files found
+    }
+    
+    private async determinePageDirectory(pageId: string, localSpaceDir: string): Promise<string> {
+        try {
+            // Get the page details to understand its parent relationship
+            const page = await this.client.getPageById(pageId);
+            if (!page) {
+                return localSpaceDir; // Fallback to root
+            }
+            
+            // If no parent, place in root
+            if (!page.parentId) {
+                return localSpaceDir;
+            }
+            
+            // Try to find the parent page's directory
+            const parentDir = await this.findPageDirectory(page.parentId, localSpaceDir);
+            if (parentDir) {
+                // Parent found, create subdirectory under parent
+                const parentPage = await this.client.getPageById(page.parentId);
+                if (parentPage) {
+                    const parentDirName = this.sanitizeFileName(parentPage.title);
+                    const targetDir = join(parentDir, parentDirName);
+                    mkdirSync(targetDir, { recursive: true });
+                    return targetDir;
+                }
+            }
+            
+            // Fallback to root if parent not found
+            return localSpaceDir;
+        } catch (error) {
+            this.outputChannel.appendLine(`[Space Sync] Warning: Could not determine directory for page ${pageId}, using root`);
+            return localSpaceDir;
+        }
+    }
+    
+    private async findPageDirectory(pageId: string, localSpaceDir: string): Promise<string | null> {
+        const allFiles = this.getLocalConfluenceFiles(localSpaceDir);
+        
+        for (const filePath of allFiles) {
+            try {
+                const content = readFileSync(filePath, 'utf-8');
+                const pageIdMatch = content.match(/<csp:file_id>(\d+)<\/csp:file_id>/);
+                if (pageIdMatch && pageIdMatch[1] === pageId) {
+                    return dirname(filePath);
+                }
+            } catch (error) {
+                // Continue searching
+            }
+        }
+        
+        return null; // Page not found locally
     }
 
     private async createBackup(localSpaceDir: string): Promise<string> {
@@ -285,22 +376,45 @@ export class SpaceSync {
         }
         
         const files: string[] = [];
-        const items = readdirSync(dir);
         
-        for (const item of items) {
-            const fullPath = join(dir, item);
-            const stat = statSync(fullPath);
+        const scanDirectory = (currentDir: string): void => {
+            const items = readdirSync(currentDir);
             
-            if (stat.isFile() && item.endsWith('.confluence')) {
-                files.push(fullPath);
+            for (const item of items) {
+                const fullPath = join(currentDir, item);
+                const stat = statSync(fullPath);
+                
+                if (stat.isFile() && item.endsWith('.confluence')) {
+                    files.push(fullPath);
+                } else if (stat.isDirectory()) {
+                    // Recursively scan subdirectories for hierarchical structure
+                    scanDirectory(fullPath);
+                }
             }
-        }
+        };
         
+        scanDirectory(dir);
         return files;
     }
 
     private sanitizeFileName(title: string): string {
         return title.replace(/[\\\\/:*?"<>|]/g, '_');
+    }
+
+    /**
+     * Read space metadata from directory if available
+     */
+    private getSpaceMetadata(spaceDir: string): any | null {
+        const metadataPath = join(spaceDir, '.space-metadata.json');
+        if (existsSync(metadataPath)) {
+            try {
+                const metadata = readFileSync(metadataPath, 'utf-8');
+                return JSON.parse(metadata);
+            } catch (error) {
+                this.outputChannel.appendLine(`Warning: Could not read space metadata: ${error}`);
+            }
+        }
+        return null;
     }
 
     private showSyncSummary(result: SpaceSyncResult): void {

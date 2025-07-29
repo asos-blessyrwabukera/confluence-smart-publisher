@@ -31,6 +31,10 @@
         "title": "Download Entire Space by ID"
       },
       {
+        "command": "confluence-smart-publisher.downloadSpaceHierarchical", 
+        "title": "Download Space with Hierarchy"
+      },
+      {
         "command": "confluence-smart-publisher.syncSpace",
         "title": "Sync Space Changes"
       },
@@ -96,6 +100,10 @@
         },
         {
           "command": "confluence-smart-publisher.downloadSpaceById",
+          "when": "explorerResourceIsFolder == true"
+        },
+        {
+          "command": "confluence-smart-publisher.downloadSpaceHierarchical",
           "when": "explorerResourceIsFolder == true"
         },
         {

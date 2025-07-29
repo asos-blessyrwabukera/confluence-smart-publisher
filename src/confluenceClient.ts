@@ -40,6 +40,10 @@ export class ConfluenceClient {
         }
     }
 
+    private sanitizeFileName(title: string): string {
+        return title.replace(/[\\/:*?"<>|]/g, '_');
+    }
+
     private getAuthHeader() {
         const token = Buffer.from(`${this.username}:${this.apiToken}`).toString('base64');
         return { 'Authorization': `Basic ${token}` };
@@ -91,6 +95,16 @@ export class ConfluenceClient {
         return allPages;
     }
 
+    async getSpaceDetails(spaceId: string): Promise<any> {
+        const { default: fetch } = await import('node-fetch');
+        const url = `${this.baseUrl}/api/v2/spaces/${encodeURIComponent(spaceId)}`;
+        const resp = await fetch(url, { headers: { ...this.getAuthHeader(), 'Content-Type': 'application/json' } });
+        if (!resp.ok) {
+            throw new Error(`Failed to get space details for ${spaceId}: ${await resp.text()}`);
+        }
+        return await resp.json() as any;
+    }
+
     async downloadSpacePages(spaceId: string, outputDir: string = 'Downloaded', bodyFormat: BodyFormat = BodyFormat.ATLAS_DOC_FORMAT): Promise<string[]> {
         const pages = await this.getAllPagesInSpace(spaceId);
         const downloadedFiles: string[] = [];
@@ -98,6 +112,10 @@ export class ConfluenceClient {
         if (pages.length === 0) {
             throw new Error(`No pages found in space with ID: ${spaceId}`);
         }
+        
+        // Get space details for proper naming
+        const spaceDetails = await this.getSpaceDetails(spaceId);
+        const spaceName = spaceDetails.name || `space_${spaceId}`;
         
         // Create space directory
         let baseDir: string;
@@ -109,9 +127,21 @@ export class ConfluenceClient {
             baseDir = join(baseDir, outputDir);
         }
         
-        // Use the first page's space key for the directory name
-        const spaceKey = pages[0].spaceId || spaceId;
-        const spaceDir = join(baseDir, `space_${spaceKey}`);
+        // Use space name for the directory
+        const sanitizedSpaceName = this.sanitizeFileName(spaceName);
+        const spaceDir = join(baseDir, sanitizedSpaceName);
+        
+        // Create space metadata file
+        mkdirSync(spaceDir, { recursive: true });
+        const spaceMetadata = {
+            spaceId: spaceId,
+            spaceName: spaceName,
+            downloadedAt: new Date().toISOString(),
+            structure: 'flat'
+        };
+        
+        const metadataPath = join(spaceDir, '.space-metadata.json');
+        writeFileSync(metadataPath, JSON.stringify(spaceMetadata, null, 2), 'utf-8');
         
         for (const page of pages) {
             try {
@@ -119,6 +149,114 @@ export class ConfluenceClient {
                 downloadedFiles.push(filePath);
             } catch (error: any) {
                 // Skip pages that fail to download and continue with others
+            }
+        }
+        
+        return downloadedFiles;
+    }
+
+    async downloadSpacePagesHierarchical(spaceId: string, outputDir: string = 'Downloaded', bodyFormat: BodyFormat = BodyFormat.ATLAS_DOC_FORMAT): Promise<string[]> {
+        const pages = await this.getAllPagesInSpace(spaceId);
+        const downloadedFiles: string[] = [];
+        
+        if (pages.length === 0) {
+            throw new Error(`No pages found in space with ID: ${spaceId}`);
+        }
+        
+        // Get space details for proper naming
+        const spaceDetails = await this.getSpaceDetails(spaceId);
+        const spaceName = spaceDetails.name || `space_${spaceId}`;
+        
+        // Create space directory
+        let baseDir: string;
+        if (isAbsolute(outputDir)) {
+            baseDir = outputDir;
+        } else {
+            const workspaceFolders = workspace.workspaceFolders;
+            baseDir = workspaceFolders && workspaceFolders.length > 0 ? workspaceFolders[0].uri.fsPath : process.cwd();
+            baseDir = join(baseDir, outputDir);
+        }
+        
+        // Use space name for the directory
+        const sanitizedSpaceName = this.sanitizeFileName(spaceName);
+        const spaceDir = join(baseDir, sanitizedSpaceName);
+        
+        // Build hierarchy map
+        const pageMap = new Map<string, any>();
+        const children = new Map<string, any[]>();
+        const rootPages: any[] = [];
+        
+        // First pass: Create page map and identify relationships
+        for (const page of pages) {
+            pageMap.set(page.id, page);
+            if (!page.parentId) {
+                rootPages.push(page);
+            } else {
+                if (!children.has(page.parentId)) {
+                    children.set(page.parentId, []);
+                }
+                children.get(page.parentId)!.push(page);
+            }
+        }
+        
+        // Helper function to build directory path for a page
+        const buildPagePath = (page: any, currentPath: string = spaceDir): string => {
+            if (!page.parentId) {
+                return currentPath;
+            }
+            
+            const parent = pageMap.get(page.parentId);
+            if (!parent) {
+                // Orphaned page - place in root
+                return currentPath;
+            }
+            
+            const parentPath = buildPagePath(parent, currentPath);
+            const parentDirName = this.sanitizeFileName(parent.title);
+            return join(parentPath, parentDirName);
+        };
+        
+        // Recursive function to download pages hierarchically
+        const downloadPageHierarchy = async (page: any, currentPath: string): Promise<void> => {
+            try {
+                // Ensure directory exists
+                mkdirSync(currentPath, { recursive: true });
+                
+                // Download the page to current directory
+                const filePath = await this.downloadConfluencePage(page.id, bodyFormat, currentPath);
+                downloadedFiles.push(filePath);
+                
+                // Process children
+                const pageChildren = children.get(page.id) || [];
+                if (pageChildren.length > 0) {
+                    const pageDirName = this.sanitizeFileName(page.title);
+                    const childPath = join(currentPath, pageDirName);
+                    
+                    for (const child of pageChildren) {
+                        await downloadPageHierarchy(child, childPath);
+                    }
+                }
+            } catch (error: any) {
+                // Skip pages that fail to download and continue with others
+                console.warn(`Failed to download page ${page.title} (ID: ${page.id}): ${error.message}`);
+            }
+        };
+        
+        // Download all root pages and their hierarchies
+        for (const rootPage of rootPages) {
+            await downloadPageHierarchy(rootPage, spaceDir);
+        }
+        
+        // Handle orphaned pages (pages with parent IDs that don't exist)
+        for (const page of pages) {
+            if (page.parentId && !pageMap.has(page.parentId)) {
+                try {
+                    mkdirSync(spaceDir, { recursive: true });
+                    const filePath = await this.downloadConfluencePage(page.id, bodyFormat, spaceDir);
+                    downloadedFiles.push(filePath);
+                } catch (error: any) {
+                    console.warn(`Failed to download orphaned page ${page.title} (ID: ${page.id}): ${error.message}`);
+                }
             }
         }
         

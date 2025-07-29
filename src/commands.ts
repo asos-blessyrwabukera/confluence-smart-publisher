@@ -132,6 +132,29 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
             vscode.window.showWarningMessage('Space ID not provided.');
             return;
         }
+        
+        // Ask user for download structure preference
+        const structureChoice = await vscode.window.showQuickPick([
+            {
+                label: 'Hierarchical Structure (Recommended)',
+                detail: 'Organise pages in folders matching Confluence page hierarchy',
+                value: 'hierarchical'
+            },
+            {
+                label: 'Flat Structure',
+                detail: 'Save all pages in a single folder (legacy behaviour)',
+                value: 'flat'
+            }
+        ], {
+            placeHolder: 'Choose download structure',
+            ignoreFocusOut: true
+        });
+        
+        if (!structureChoice) {
+            vscode.window.showWarningMessage('Download structure not selected.');
+            return;
+        }
+        
         try {
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
@@ -139,6 +162,7 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 cancellable: false
             }, async (progress) => {
                 outputChannel.appendLine(`[Download Space] Starting download of space: ID=${spaceId}`);
+                outputChannel.appendLine(`[Download Space] Using ${structureChoice.label.toLowerCase()}`);
                 const client = new ConfluenceClient();
                 
                 progress.report({ message: 'Getting space pages...' });
@@ -151,7 +175,13 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
                 }
                 
                 progress.report({ message: `Downloading ${pages.length} pages...` });
-                const downloadedFiles = await client.downloadSpacePages(spaceId, uri.fsPath, BodyFormat.ATLAS_DOC_FORMAT);
+                
+                let downloadedFiles: string[];
+                if (structureChoice.value === 'hierarchical') {
+                    downloadedFiles = await client.downloadSpacePagesHierarchical(spaceId, uri.fsPath, BodyFormat.ATLAS_DOC_FORMAT);
+                } else {
+                    downloadedFiles = await client.downloadSpacePages(spaceId, uri.fsPath, BodyFormat.ATLAS_DOC_FORMAT);
+                }
                 
                 const successCount = downloadedFiles.length;
                 const failedCount = pages.length - successCount;
@@ -171,6 +201,69 @@ export function registerCommands(context: vscode.ExtensionContext, outputChannel
             outputChannel.appendLine(`[Download Space] Error: ${e.message || e}`);
             outputChannel.show(true);
             vscode.window.showErrorMessage(`Error downloading space: ${e.message || e}`);
+        }
+    });
+
+    // Command to download entire space by ID with hierarchical structure
+    const downloadSpaceHierarchicalCmd = vscode.commands.registerCommand('confluence-smart-publisher.downloadSpaceHierarchical', async (uri: vscode.Uri) => {
+        if (!uri || !uri.fsPath) {
+            vscode.window.showErrorMessage('Select a folder to save the space.');
+            return;
+        }
+        const stat = await vscode.workspace.fs.stat(uri);
+        if (stat.type !== vscode.FileType.Directory) {
+            vscode.window.showErrorMessage('Select a folder to save the space.');
+            return;
+        }
+        const spaceId = await vscode.window.showInputBox({ 
+            prompt: 'Enter the Confluence Space ID', 
+            ignoreFocusOut: true,
+            placeHolder: 'e.g., 12345678'
+        });
+        if (!spaceId) {
+            vscode.window.showWarningMessage('Space ID not provided.');
+            return;
+        }
+        
+        try {
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Downloading space with hierarchical structure...',
+                cancellable: false
+            }, async (progress) => {
+                outputChannel.appendLine(`[Download Space Hierarchical] Starting download of space: ID=${spaceId}`);
+                const client = new ConfluenceClient();
+                
+                progress.report({ message: 'Getting space pages...' });
+                const pages = await client.getAllPagesInSpace(spaceId);
+                outputChannel.appendLine(`[Download Space Hierarchical] Found ${pages.length} pages in space`);
+                
+                if (pages.length === 0) {
+                    vscode.window.showWarningMessage('No pages found in the specified space.');
+                    return;
+                }
+                
+                progress.report({ message: `Downloading ${pages.length} pages with hierarchy...` });
+                const downloadedFiles = await client.downloadSpacePagesHierarchical(spaceId, uri.fsPath, BodyFormat.ATLAS_DOC_FORMAT);
+                
+                const successCount = downloadedFiles.length;
+                const failedCount = pages.length - successCount;
+                
+                outputChannel.appendLine(`[Download Space Hierarchical] Download completed. ${successCount} pages downloaded successfully.`);
+                if (failedCount > 0) {
+                    outputChannel.appendLine(`[Download Space Hierarchical] ${failedCount} pages failed to download.`);
+                }
+                
+                const message = failedCount > 0 
+                    ? `Hierarchical space download completed! ${successCount} pages downloaded, ${failedCount} failed.`
+                    : `Hierarchical space download completed! ${successCount} pages downloaded successfully.`;
+                    
+                vscode.window.showInformationMessage(message);
+            });
+        } catch (e: any) {
+            outputChannel.appendLine(`[Download Space Hierarchical] Error: ${e.message || e}`);
+            outputChannel.show(true);
+            vscode.window.showErrorMessage(`Error downloading space hierarchically: ${e.message || e}`);
         }
     });
 
@@ -679,6 +772,7 @@ ${markdown.trim()}
         getPageByTitleCmd,
         getPageByIdCmd,
         downloadSpaceByIdCmd,
+        downloadSpaceHierarchicalCmd,
         syncSpaceCmd,
         createPageCmd,
         formatConfluenceCmd,
