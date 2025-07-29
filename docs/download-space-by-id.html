@@ -167,7 +167,8 @@
 <body>
 <h1 id="download-entire-space-by-id">Download Entire Space by ID</h1>
 <p>This feature allows you to download all pages from a Confluence space
-using the space ID.</p>
+using the space ID with support for both flat and hierarchical directory
+structures.</p>
 <h2 id="how-to-use">How to Use</h2>
 <ol type="1">
 <li><strong>Right-click on a folder</strong> in VS Code Explorer where
@@ -176,15 +177,59 @@ you want to save the space content</li>
 by ID</strong></li>
 <li>Enter the <strong>Space ID</strong> when prompted (e.g.,
 <code>12345678</code>)</li>
+<li><strong>Choose download structure</strong>:
+<ul>
+<li><strong>Hierarchical Structure (Recommended)</strong>: Creates
+folders that mirror the Confluence page hierarchy</li>
+<li><strong>Flat Structure</strong>: Saves all pages in a single folder
+(legacy behavior)</li>
+</ul></li>
 <li>The extension will:
 <ul>
 <li>Fetch all pages from the specified space</li>
 <li>Create a folder named <code>space_&lt;SPACE_KEY&gt;</code> inside
 your selected directory</li>
 <li>Download each page as a <code>.confluence</code> file</li>
+<li>Organize files according to the chosen structure</li>
 <li>Show progress and results</li>
 </ul></li>
 </ol>
+<h2 id="download-structures">Download Structures</h2>
+<h3 id="hierarchical-structure-new">Hierarchical Structure (New)</h3>
+<p>Organizes pages in a directory tree that mirrors the Confluence page
+hierarchy:</p>
+<pre class="text"><code>selected-folder/
+└── space_SPACEKEY/
+    ├── Root Page 1.confluence
+    ├── Root Page 1/
+    │   ├── Child Page A.confluence
+    │   ├── Child Page A/
+    │   │   └── Grandchild Page.confluence
+    │   └── Child Page B.confluence
+    ├── Root Page 2.confluence
+    └── Root Page 2/
+        └── Child Page C.confluence</code></pre>
+<p><strong>Benefits</strong>:</p>
+<ul>
+<li><strong>Visual Hierarchy</strong>: Easy navigation matching
+Confluence structure</li>
+<li><strong>Logical Organization</strong>: Related pages grouped
+together</li>
+<li><strong>Better File Management</strong>: Intuitive folder
+structure</li>
+<li><strong>Sync Compatible</strong>: Works seamlessly with space sync
+functionality</li>
+</ul>
+<h3 id="flat-structure-legacy">Flat Structure (Legacy)</h3>
+<p>Saves all pages in a single directory:</p>
+<pre class="text"><code>selected-folder/
+└── space_SPACEKEY/
+    ├── Root Page 1.confluence
+    ├── Child Page A.confluence
+    ├── Grandchild Page.confluence
+    ├── Child Page B.confluence
+    ├── Root Page 2.confluence
+    └── Child Page C.confluence</code></pre>
 <h2 id="space-id-vs-space-key">Space ID vs Space Key</h2>
 <ul>
 <li><strong>Space ID</strong>: A numeric identifier (e.g.,
@@ -204,17 +249,12 @@ information</li>
 <li><strong>From Browser Dev Tools</strong>: Inspect network requests
 when browsing the space</li>
 </ol>
-<h2 id="output-structure">Output Structure</h2>
-<pre class="text"><code>selected-folder/
-└── space_SPACEKEY/
-    ├── Page Title 1.confluence
-    ├── Page Title 2.confluence
-    ├── Subfolder Page.confluence
-    └── ...</code></pre>
 <h2 id="features">Features</h2>
 <ul>
 <li><strong>Bulk Download</strong>: Downloads all pages in a space at
 once</li>
+<li><strong>Structure Choice</strong>: Select between hierarchical and
+flat organization</li>
 <li><strong>Progress Tracking</strong>: Shows download progress with
 notifications</li>
 <li><strong>Error Handling</strong>: Continues downloading even if some
@@ -222,7 +262,20 @@ pages fail</li>
 <li><strong>Automatic Organization</strong>: Creates organized folder
 structure</li>
 <li><strong>Complete Metadata</strong>: Includes all page metadata
-(labels, properties, etc.)</li>
+(labels, properties, parent relationships)</li>
+<li><strong>Sync Compatible</strong>: Both structures work with space
+synchronization</li>
+</ul>
+<h2 id="synchronization-support">Synchronization Support</h2>
+<p>The space sync functionality automatically detects whether you’re
+using hierarchical or flat structure and works accordingly:</p>
+<ul>
+<li><strong>Hierarchical</strong>: Maintains directory structure during
+sync</li>
+<li><strong>Flat</strong>: Uses traditional flat file
+synchronization</li>
+<li><strong>Mixed</strong>: Handles transitions between structures
+gracefully</li>
 </ul>
 <h2 id="error-handling">Error Handling</h2>
 <ul>
